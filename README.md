@@ -44,13 +44,14 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: your-org/codex-reviewer@v1
+      - uses: nightwhite/codex-reviewer@main
         with:
           github-token: ${{ github.token }}
           provider-base-url: ${{ secrets.CODEX_PROVIDER_BASE_URL }}
           provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
           model: gpt-5.5
           effort: high
+          sandbox: read-only
 ```
 
 ## Provider Contract
