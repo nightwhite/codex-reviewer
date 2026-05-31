@@ -7,9 +7,15 @@ export type PullRequestContext = {
     body: string;
     headSha: string;
 };
-export type ReviewCommentInput = {
-    marker: string;
+export type InlineReviewComment = {
+    path: string;
+    line: number;
     body: string;
+};
+export type PullRequestReviewInput = {
+    body: string;
+    commitSha: string;
+    comments: InlineReviewComment[];
 };
 export type GitHubClient = ReturnType<typeof getOctokit>;
 export declare function loadPullRequestContext(eventPath: string): Promise<PullRequestContext>;
@@ -18,4 +24,4 @@ export declare function getLatestCommitDiff(github: GitHubClient, pullRequest: P
     base: string;
     head: string;
 }): Promise<string>;
-export declare function upsertReviewComment(github: GitHubClient, pullRequest: PullRequestContext, input: ReviewCommentInput): Promise<void>;
+export declare function createPullRequestReview(github: GitHubClient, pullRequest: PullRequestContext, input: PullRequestReviewInput): Promise<void>;

@@ -23917,12 +23917,20 @@ function buildReviewPrompt(input) {
     "- Do not invent problems. If there are no meaningful findings, say so.",
     "- Do not ask for broad rewrites unless the latest commit creates a clear maintainability risk.",
     "",
-    "Return a concise Markdown review with:",
-    "1. High risk findings, if any. These must block merge.",
-    "2. Medium risk findings, if any. These should be fixed before merge.",
-    "3. Low risk suggestions, if useful. These must be concrete, not taste-based.",
-    "4. Missing or weak tests.",
-    "5. A short verdict: approve, approve with nits, or request changes.",
+    "Return valid JSON only. Do not wrap it in Markdown fences.",
+    "Use this exact shape:",
+    "{",
+    '  "summaryMarkdown": "Concise Markdown summary with high risk findings, medium risk findings, low risk suggestions, missing or weak tests, and verdict.",',
+    '  "inlineComments": [',
+    '    { "path": "relative/file/path.ts", "line": 12, "body": "Actionable line-specific comment." }',
+    "  ]",
+    "}",
+    "For inlineComments:",
+    "- Only include comments for lines added or changed in the latest commit diff.",
+    "- Use the new-file path from the diff.",
+    "- Use 1-based line numbers on the RIGHT side of the diff.",
+    "- Keep body concise and actionable; Markdown suggestions are allowed when exact.",
+    "- If no line-specific findings are needed, return an empty inlineComments array.",
     "",
     "Latest commit diff:",
     "```diff",
@@ -24139,28 +24147,20 @@ async function getLatestCommitDiff(github, pullRequest, range) {
   });
   return String(response.data);
 }
-async function upsertReviewComment(github, pullRequest, input) {
-  const comments = await github.rest.issues.listComments({
+async function createPullRequestReview(github, pullRequest, input) {
+  await github.rest.pulls.createReview({
     owner: pullRequest.owner,
     repo: pullRequest.repo,
-    issue_number: pullRequest.pullNumber,
-    per_page: 100
-  });
-  const existing = comments.data.find((comment) => comment.body?.includes(input.marker));
-  if (existing) {
-    await github.rest.issues.updateComment({
-      owner: pullRequest.owner,
-      repo: pullRequest.repo,
-      comment_id: existing.id,
-      body: input.body
-    });
-    return;
-  }
-  await github.rest.issues.createComment({
-    owner: pullRequest.owner,
-    repo: pullRequest.repo,
-    issue_number: pullRequest.pullNumber,
-    body: input.body
+    pull_number: pullRequest.pullNumber,
+    commit_id: input.commitSha,
+    event: "COMMENT",
+    body: input.body,
+    comments: input.comments.map((comment) => ({
+      path: comment.path,
+      line: comment.line,
+      side: "RIGHT",
+      body: comment.body
+    }))
   });
 }
 
@@ -24193,7 +24193,7 @@ async function runReviewer(input) {
       providerBaseUrl: proxy.baseUrl,
       model: input.model
     });
-    const review = await runCodexReview({
+    const rawReview = await runCodexReview({
       prompt: buildReviewPrompt({
         owner: input.pullRequest.owner,
         repo: input.pullRequest.repo,
@@ -24211,16 +24211,57 @@ async function runReviewer(input) {
       model: input.model,
       effort: input.effort
     });
-    await upsertReviewComment(input.github, input.pullRequest, {
-      marker: input.commentMarker,
-      body: formatReviewComment(input.commentMarker, range, review)
+    const review = parseCodexReview(rawReview);
+    await createPullRequestReview(input.github, input.pullRequest, {
+      body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
+      commitSha: range.head,
+      comments: review.inlineComments
     });
-    return review;
+    return review.summaryMarkdown;
   } finally {
     await proxy.close();
   }
 }
-function formatReviewComment(marker, range, review) {
+function parseCodexReview(rawReview) {
+  const parsed = JSON.parse(stripJsonFence(rawReview));
+  const summaryMarkdown = typeof parsed.summaryMarkdown === "string" ? parsed.summaryMarkdown.trim() : "";
+  if (!summaryMarkdown) {
+    throw new Error("Codex review JSON must include summaryMarkdown.");
+  }
+  const inlineComments = Array.isArray(parsed.inlineComments) ? parsed.inlineComments.flatMap(parseInlineComment) : [];
+  return { summaryMarkdown, inlineComments };
+}
+function parseInlineComment(value) {
+  if (value == null || typeof value !== "object") {
+    return [];
+  }
+  const comment = value;
+  const pathValue = comment.path;
+  const lineValue = comment.line;
+  const bodyValue = comment.body;
+  if (typeof pathValue !== "string" || pathValue.trim().length === 0) {
+    return [];
+  }
+  if (typeof lineValue !== "number" || !Number.isInteger(lineValue) || lineValue <= 0) {
+    return [];
+  }
+  if (typeof bodyValue !== "string" || bodyValue.trim().length === 0) {
+    return [];
+  }
+  return [
+    {
+      path: pathValue.trim(),
+      line: lineValue,
+      body: bodyValue.trim()
+    }
+  ];
+}
+function stripJsonFence(rawReview) {
+  const trimmed = rawReview.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced?.[1] ?? trimmed;
+}
+function formatReviewBody(marker, range, review) {
   return [
     marker,
     "",

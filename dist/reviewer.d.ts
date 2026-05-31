@@ -1,5 +1,5 @@
 import { SandboxMode } from "./codex.js";
-import { GitHubClient, PullRequestContext } from "./github.js";
+import { GitHubClient, InlineReviewComment, PullRequestContext } from "./github.js";
 export type LatestCommitRangeInput = {
     headSha: string;
     parentSha: string;
@@ -19,5 +19,10 @@ export type ReviewerInput = {
     sandbox: SandboxMode;
     commentMarker: string;
 };
+export type CodexReview = {
+    summaryMarkdown: string;
+    inlineComments: InlineReviewComment[];
+};
 export declare function latestCommitRange(input: LatestCommitRangeInput): CommitRange;
 export declare function runReviewer(input: ReviewerInput): Promise<string>;
+export declare function parseCodexReview(rawReview: string): CodexReview;

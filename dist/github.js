@@ -46,27 +46,19 @@ export async function getLatestCommitDiff(github, pullRequest, range) {
     });
     return String(response.data);
 }
-export async function upsertReviewComment(github, pullRequest, input) {
-    const comments = await github.rest.issues.listComments({
+export async function createPullRequestReview(github, pullRequest, input) {
+    await github.rest.pulls.createReview({
         owner: pullRequest.owner,
         repo: pullRequest.repo,
-        issue_number: pullRequest.pullNumber,
-        per_page: 100,
-    });
-    const existing = comments.data.find((comment) => comment.body?.includes(input.marker));
-    if (existing) {
-        await github.rest.issues.updateComment({
-            owner: pullRequest.owner,
-            repo: pullRequest.repo,
-            comment_id: existing.id,
-            body: input.body,
-        });
-        return;
-    }
-    await github.rest.issues.createComment({
-        owner: pullRequest.owner,
-        repo: pullRequest.repo,
-        issue_number: pullRequest.pullNumber,
+        pull_number: pullRequest.pullNumber,
+        commit_id: input.commitSha,
+        event: "COMMENT",
         body: input.body,
+        comments: input.comments.map((comment) => ({
+            path: comment.path,
+            line: comment.line,
+            side: "RIGHT",
+            body: comment.body,
+        })),
     });
 }

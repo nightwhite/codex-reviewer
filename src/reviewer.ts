@@ -6,10 +6,11 @@ import { runCodexReview, SandboxMode, writeCodexConfig } from "./codex.js";
 import { startProviderProxy } from "./providerProxy.js";
 import {
   GitHubClient,
+  InlineReviewComment,
   PullRequestContext,
+  createPullRequestReview,
   getLatestCommitParentSha,
   getLatestCommitDiff,
-  upsertReviewComment,
 } from "./github.js";
 
 export type LatestCommitRangeInput = {
@@ -32,6 +33,11 @@ export type ReviewerInput = {
   workdir: string;
   sandbox: SandboxMode;
   commentMarker: string;
+};
+
+export type CodexReview = {
+  summaryMarkdown: string;
+  inlineComments: InlineReviewComment[];
 };
 
 export function latestCommitRange(input: LatestCommitRangeInput): CommitRange {
@@ -65,7 +71,7 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
       model: input.model,
     });
 
-    const review = await runCodexReview({
+    const rawReview = await runCodexReview({
       prompt: buildReviewPrompt({
         owner: input.pullRequest.owner,
         repo: input.pullRequest.repo,
@@ -83,19 +89,69 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
       model: input.model,
       effort: input.effort,
     });
+    const review = parseCodexReview(rawReview);
 
-    await upsertReviewComment(input.github, input.pullRequest, {
-      marker: input.commentMarker,
-      body: formatReviewComment(input.commentMarker, range, review),
+    await createPullRequestReview(input.github, input.pullRequest, {
+      body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
+      commitSha: range.head,
+      comments: review.inlineComments,
     });
 
-    return review;
+    return review.summaryMarkdown;
   } finally {
     await proxy.close();
   }
 }
 
-function formatReviewComment(marker: string, range: CommitRange, review: string): string {
+export function parseCodexReview(rawReview: string): CodexReview {
+  const parsed = JSON.parse(stripJsonFence(rawReview)) as {
+    summaryMarkdown?: unknown;
+    inlineComments?: unknown;
+  };
+  const summaryMarkdown = typeof parsed.summaryMarkdown === "string" ? parsed.summaryMarkdown.trim() : "";
+  if (!summaryMarkdown) {
+    throw new Error("Codex review JSON must include summaryMarkdown.");
+  }
+  const inlineComments = Array.isArray(parsed.inlineComments)
+    ? parsed.inlineComments.flatMap(parseInlineComment)
+    : [];
+
+  return { summaryMarkdown, inlineComments };
+}
+
+function parseInlineComment(value: unknown): InlineReviewComment[] {
+  if (value == null || typeof value !== "object") {
+    return [];
+  }
+  const comment = value as Record<string, unknown>;
+  const pathValue = comment.path;
+  const lineValue = comment.line;
+  const bodyValue = comment.body;
+  if (typeof pathValue !== "string" || pathValue.trim().length === 0) {
+    return [];
+  }
+  if (typeof lineValue !== "number" || !Number.isInteger(lineValue) || lineValue <= 0) {
+    return [];
+  }
+  if (typeof bodyValue !== "string" || bodyValue.trim().length === 0) {
+    return [];
+  }
+  return [
+    {
+      path: pathValue.trim(),
+      line: lineValue,
+      body: bodyValue.trim(),
+    },
+  ];
+}
+
+function stripJsonFence(rawReview: string): string {
+  const trimmed = rawReview.trim();
+  const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  return fenced?.[1] ?? trimmed;
+}
+
+function formatReviewBody(marker: string, range: CommitRange, review: string): string {
   return [
     marker,
     "",

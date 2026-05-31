@@ -9,7 +9,7 @@ It is built for Codex model providers, not direct ChatGPT-style API calls. The f
 - `pull_request.opened`: reviews the current PR head commit only.
 - `pull_request.synchronize`: reviews the new PR head commit only.
 - Multi-commit PRs are not reviewed from base to head. The action compares `head.sha^...head.sha`.
-- Existing bot review comment is updated instead of creating a new comment every run.
+- A GitHub PR Review is submitted with a summary and inline review comments when Codex finds line-specific issues.
 
 ## Direct Use In This Repository
 
@@ -88,7 +88,7 @@ Findings must be actionable and tied to concrete risks. If there are no meaningf
 
 | Input | Required | Description |
 | --- | --- | --- |
-| `github-token` | Yes | Token for reading PR data and writing comments. |
+| `github-token` | Yes | Token for reading PR data and submitting PR reviews. |
 | `provider-base-url` | Yes | Responses-compatible provider base URL. |
 | `provider-api-key` | Yes | API key for the provider. |
 | `model` | Yes | Model name requested by Codex. |
@@ -101,5 +101,4 @@ Findings must be actionable and tied to concrete risks. If there are no meaningf
 
 - No Chat Completions to Responses conversion.
 - No automatic provider fallback.
-- No inline review comments in the first version.
 - No business third-party API integration.

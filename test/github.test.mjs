@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { loadPullRequestContext, upsertReviewComment } from "../dist/github.js";
+import { createPullRequestReview, loadPullRequestContext } from "../dist/github.js";
 
 test("loadPullRequestContext reads the base repository and PR head sha", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "codex-reviewer-event-"));
@@ -42,25 +42,19 @@ test("loadPullRequestContext reads the base repository and PR head sha", async (
   });
 });
 
-test("upsertReviewComment updates an existing bot comment", async () => {
+test("createPullRequestReview submits a GitHub PR review with inline comments", async () => {
   const calls = [];
   const github = {
     rest: {
-      issues: {
-        listComments: async () => ({
-          data: [{ id: 99, body: "<!-- codex-reviewer:latest-commit -->\nold" }],
-        }),
-        updateComment: async (input) => {
-          calls.push(["update", input]);
-        },
-        createComment: async (input) => {
-          calls.push(["create", input]);
+      pulls: {
+        createReview: async (input) => {
+          calls.push(input);
         },
       },
     },
   };
 
-  await upsertReviewComment(
+  await createPullRequestReview(
     github,
     {
       owner: "acme",
@@ -71,13 +65,31 @@ test("upsertReviewComment updates an existing bot comment", async () => {
       headSha: "abc123",
     },
     {
-      marker: "<!-- codex-reviewer:latest-commit -->",
       body: "<!-- codex-reviewer:latest-commit -->\nnew",
+      commitSha: "abc123",
+      comments: [
+        {
+          path: "src/app.ts",
+          line: 12,
+          body: "This can throw on empty input.",
+        },
+      ],
     },
   );
 
   assert.equal(calls.length, 1);
-  assert.equal(calls[0][0], "update");
-  assert.equal(calls[0][1].comment_id, 99);
-  assert.equal(calls[0][1].body, "<!-- codex-reviewer:latest-commit -->\nnew");
+  assert.equal(calls[0].owner, "acme");
+  assert.equal(calls[0].repo, "rocket");
+  assert.equal(calls[0].pull_number, 42);
+  assert.equal(calls[0].commit_id, "abc123");
+  assert.equal(calls[0].event, "COMMENT");
+  assert.equal(calls[0].body, "<!-- codex-reviewer:latest-commit -->\nnew");
+  assert.deepEqual(calls[0].comments, [
+    {
+      path: "src/app.ts",
+      line: 12,
+      side: "RIGHT",
+      body: "This can throw on empty input.",
+    },
+  ]);
 });

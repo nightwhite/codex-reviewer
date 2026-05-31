@@ -4,7 +4,7 @@ import path from "node:path";
 import { buildReviewPrompt } from "./prompt.js";
 import { runCodexReview, writeCodexConfig } from "./codex.js";
 import { startProviderProxy } from "./providerProxy.js";
-import { getLatestCommitParentSha, getLatestCommitDiff, upsertReviewComment, } from "./github.js";
+import { createPullRequestReview, getLatestCommitParentSha, getLatestCommitDiff, } from "./github.js";
 export function latestCommitRange(input) {
     if (!input.headSha.trim()) {
         throw new Error("head sha is required");
@@ -33,7 +33,7 @@ export async function runReviewer(input) {
             providerBaseUrl: proxy.baseUrl,
             model: input.model,
         });
-        const review = await runCodexReview({
+        const rawReview = await runCodexReview({
             prompt: buildReviewPrompt({
                 owner: input.pullRequest.owner,
                 repo: input.pullRequest.repo,
@@ -51,17 +51,60 @@ export async function runReviewer(input) {
             model: input.model,
             effort: input.effort,
         });
-        await upsertReviewComment(input.github, input.pullRequest, {
-            marker: input.commentMarker,
-            body: formatReviewComment(input.commentMarker, range, review),
+        const review = parseCodexReview(rawReview);
+        await createPullRequestReview(input.github, input.pullRequest, {
+            body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
+            commitSha: range.head,
+            comments: review.inlineComments,
         });
-        return review;
+        return review.summaryMarkdown;
     }
     finally {
         await proxy.close();
     }
 }
-function formatReviewComment(marker, range, review) {
+export function parseCodexReview(rawReview) {
+    const parsed = JSON.parse(stripJsonFence(rawReview));
+    const summaryMarkdown = typeof parsed.summaryMarkdown === "string" ? parsed.summaryMarkdown.trim() : "";
+    if (!summaryMarkdown) {
+        throw new Error("Codex review JSON must include summaryMarkdown.");
+    }
+    const inlineComments = Array.isArray(parsed.inlineComments)
+        ? parsed.inlineComments.flatMap(parseInlineComment)
+        : [];
+    return { summaryMarkdown, inlineComments };
+}
+function parseInlineComment(value) {
+    if (value == null || typeof value !== "object") {
+        return [];
+    }
+    const comment = value;
+    const pathValue = comment.path;
+    const lineValue = comment.line;
+    const bodyValue = comment.body;
+    if (typeof pathValue !== "string" || pathValue.trim().length === 0) {
+        return [];
+    }
+    if (typeof lineValue !== "number" || !Number.isInteger(lineValue) || lineValue <= 0) {
+        return [];
+    }
+    if (typeof bodyValue !== "string" || bodyValue.trim().length === 0) {
+        return [];
+    }
+    return [
+        {
+            path: pathValue.trim(),
+            line: lineValue,
+            body: bodyValue.trim(),
+        },
+    ];
+}
+function stripJsonFence(rawReview) {
+    const trimmed = rawReview.trim();
+    const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+    return fenced?.[1] ?? trimmed;
+}
+function formatReviewBody(marker, range, review) {
     return [
         marker,
         "",

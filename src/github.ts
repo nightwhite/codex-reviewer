@@ -10,9 +10,16 @@ export type PullRequestContext = {
   headSha: string;
 };
 
-export type ReviewCommentInput = {
-  marker: string;
+export type InlineReviewComment = {
+  path: string;
+  line: number;
   body: string;
+};
+
+export type PullRequestReviewInput = {
+  body: string;
+  commitSha: string;
+  comments: InlineReviewComment[];
 };
 
 export type GitHubClient = ReturnType<typeof getOctokit>;
@@ -86,33 +93,23 @@ export async function getLatestCommitDiff(
   return String(response.data);
 }
 
-export async function upsertReviewComment(
+export async function createPullRequestReview(
   github: GitHubClient,
   pullRequest: PullRequestContext,
-  input: ReviewCommentInput,
+  input: PullRequestReviewInput,
 ): Promise<void> {
-  const comments = await github.rest.issues.listComments({
+  await github.rest.pulls.createReview({
     owner: pullRequest.owner,
     repo: pullRequest.repo,
-    issue_number: pullRequest.pullNumber,
-    per_page: 100,
-  });
-  const existing = comments.data.find((comment) => comment.body?.includes(input.marker));
-
-  if (existing) {
-    await github.rest.issues.updateComment({
-      owner: pullRequest.owner,
-      repo: pullRequest.repo,
-      comment_id: existing.id,
-      body: input.body,
-    });
-    return;
-  }
-
-  await github.rest.issues.createComment({
-    owner: pullRequest.owner,
-    repo: pullRequest.repo,
-    issue_number: pullRequest.pullNumber,
+    pull_number: pullRequest.pullNumber,
+    commit_id: input.commitSha,
+    event: "COMMENT",
     body: input.body,
+    comments: input.comments.map((comment) => ({
+      path: comment.path,
+      line: comment.line,
+      side: "RIGHT" as const,
+      body: comment.body,
+    })),
   });
 }
