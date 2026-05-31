@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "tsc && esbuild src/main.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/main.js",
+    "build": "tsc && esbuild src/main.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/main.cjs",
     "test": "node --test test/*.test.mjs"
   },
   "dependencies": {
