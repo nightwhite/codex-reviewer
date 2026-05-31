@@ -42,7 +42,7 @@ export function buildReviewPrompt(input: ReviewPromptInput): string {
     "Return valid JSON only. Do not wrap it in Markdown fences.",
     "Use this exact shape:",
     "{",
-    '  "summaryMarkdown": "Concise Markdown summary with high risk findings, medium risk findings, low risk suggestions, missing or weak tests, and verdict.",',
+    '  "summaryMarkdown": "Concise Markdown review with sections: Verdict, Findings, Tests. Start with a direct verdict line.",',
     '  "inlineComments": [',
     '    { "path": "relative/file/path.ts", "line": 12, "body": "Actionable line-specific comment." }',
     "  ]",

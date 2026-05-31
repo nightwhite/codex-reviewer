@@ -5,6 +5,9 @@ import { buildReviewPrompt } from "./prompt.js";
 import { runCodexReview, writeCodexConfig } from "./codex.js";
 import { startProviderProxy } from "./providerProxy.js";
 import { createPullRequestReview, getLatestCommitParentSha, getLatestCommitDiff, } from "./github.js";
+const projectName = "codex-reviewer";
+const projectUrl = "https://github.com/nightwhite/codex-reviewer";
+const projectLink = `[${projectName}](${projectUrl})`;
 export function latestCommitRange(input) {
     if (!input.headSha.trim()) {
         throw new Error("head sha is required");
@@ -55,7 +58,10 @@ export async function runReviewer(input) {
         await createPullRequestReview(input.github, input.pullRequest, {
             body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
             commitSha: range.head,
-            comments: review.inlineComments,
+            comments: review.inlineComments.map((comment) => ({
+                ...comment,
+                body: formatInlineCommentBody(comment.body),
+            })),
         });
         return review.summaryMarkdown;
     }
@@ -104,9 +110,11 @@ function stripJsonFence(rawReview) {
     const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
     return fenced?.[1] ?? trimmed;
 }
-function formatReviewBody(marker, range, review) {
+export function formatReviewBody(marker, range, review) {
     return [
         marker,
+        "",
+        `### ${projectLink}: Code review`,
         "",
         `Reviewed latest commit: \`${range.head}\``,
         `Range: \`${range.base}...${range.head}\``,
@@ -114,4 +122,7 @@ function formatReviewBody(marker, range, review) {
         review.trim(),
         "",
     ].join("\n");
+}
+export function formatInlineCommentBody(body) {
+    return `${projectLink}: ${body.trim()}`;
 }

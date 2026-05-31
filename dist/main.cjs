@@ -23920,7 +23920,7 @@ function buildReviewPrompt(input) {
     "Return valid JSON only. Do not wrap it in Markdown fences.",
     "Use this exact shape:",
     "{",
-    '  "summaryMarkdown": "Concise Markdown summary with high risk findings, medium risk findings, low risk suggestions, missing or weak tests, and verdict.",',
+    '  "summaryMarkdown": "Concise Markdown review with sections: Verdict, Findings, Tests. Start with a direct verdict line.",',
     '  "inlineComments": [',
     '    { "path": "relative/file/path.ts", "line": 12, "body": "Actionable line-specific comment." }',
     "  ]",
@@ -24165,6 +24165,9 @@ async function createPullRequestReview(github, pullRequest, input) {
 }
 
 // src/reviewer.ts
+var projectName = "codex-reviewer";
+var projectUrl = "https://github.com/nightwhite/codex-reviewer";
+var projectLink = `[${projectName}](${projectUrl})`;
 function latestCommitRange(input) {
   if (!input.headSha.trim()) {
     throw new Error("head sha is required");
@@ -24215,7 +24218,10 @@ async function runReviewer(input) {
     await createPullRequestReview(input.github, input.pullRequest, {
       body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
       commitSha: range.head,
-      comments: review.inlineComments
+      comments: review.inlineComments.map((comment) => ({
+        ...comment,
+        body: formatInlineCommentBody(comment.body)
+      }))
     });
     return review.summaryMarkdown;
   } finally {
@@ -24265,12 +24271,17 @@ function formatReviewBody(marker, range, review) {
   return [
     marker,
     "",
+    `### ${projectLink}: Code review`,
+    "",
     `Reviewed latest commit: \`${range.head}\``,
     `Range: \`${range.base}...${range.head}\``,
     "",
     review.trim(),
     ""
   ].join("\n");
+}
+function formatInlineCommentBody(body) {
+  return `${projectLink}: ${body.trim()}`;
 }
 
 // src/main.ts

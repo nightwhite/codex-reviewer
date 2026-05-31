@@ -26,3 +26,5 @@ export type CodexReview = {
 export declare function latestCommitRange(input: LatestCommitRangeInput): CommitRange;
 export declare function runReviewer(input: ReviewerInput): Promise<string>;
 export declare function parseCodexReview(rawReview: string): CodexReview;
+export declare function formatReviewBody(marker: string, range: CommitRange, review: string): string;
+export declare function formatInlineCommentBody(body: string): string;

@@ -40,6 +40,10 @@ export type CodexReview = {
   inlineComments: InlineReviewComment[];
 };
 
+const projectName = "codex-reviewer";
+const projectUrl = "https://github.com/nightwhite/codex-reviewer";
+const projectLink = `[${projectName}](${projectUrl})`;
+
 export function latestCommitRange(input: LatestCommitRangeInput): CommitRange {
   if (!input.headSha.trim()) {
     throw new Error("head sha is required");
@@ -94,7 +98,10 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
     await createPullRequestReview(input.github, input.pullRequest, {
       body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
       commitSha: range.head,
-      comments: review.inlineComments,
+      comments: review.inlineComments.map((comment) => ({
+        ...comment,
+        body: formatInlineCommentBody(comment.body),
+      })),
     });
 
     return review.summaryMarkdown;
@@ -151,9 +158,11 @@ function stripJsonFence(rawReview: string): string {
   return fenced?.[1] ?? trimmed;
 }
 
-function formatReviewBody(marker: string, range: CommitRange, review: string): string {
+export function formatReviewBody(marker: string, range: CommitRange, review: string): string {
   return [
     marker,
+    "",
+    `### ${projectLink}: Code review`,
     "",
     `Reviewed latest commit: \`${range.head}\``,
     `Range: \`${range.base}...${range.head}\``,
@@ -161,4 +170,8 @@ function formatReviewBody(marker: string, range: CommitRange, review: string): s
     review.trim(),
     "",
   ].join("\n");
+}
+
+export function formatInlineCommentBody(body: string): string {
+  return `${projectLink}: ${body.trim()}`;
 }
