@@ -31,7 +31,7 @@ export function buildCodexArgs(input) {
     if (input.effort && input.effort.trim().length > 0) {
         args.push("--config", `model_reasoning_effort="${escapeTomlString(input.effort)}"`);
     }
-    args.push("--sandbox", input.sandbox);
+    args.push("--yolo");
     return args;
 }
 export async function runCodexReview(input) {

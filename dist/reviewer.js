@@ -50,7 +50,6 @@ export async function runReviewer(input) {
             codexHome,
             workdir: input.workdir,
             outputFile: "",
-            sandbox: input.sandbox,
             model: input.model,
             effort: input.effort,
         });

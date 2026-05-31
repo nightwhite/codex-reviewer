@@ -2,7 +2,7 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { buildReviewPrompt } from "./prompt.js";
-import { runCodexReview, SandboxMode, writeCodexConfig } from "./codex.js";
+import { runCodexReview, writeCodexConfig } from "./codex.js";
 import { startProviderProxy } from "./providerProxy.js";
 import {
   GitHubClient,
@@ -31,7 +31,6 @@ export type ReviewerInput = {
   model: string;
   effort?: string;
   workdir: string;
-  sandbox: SandboxMode;
   commentMarker: string;
 };
 
@@ -89,7 +88,6 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
       codexHome,
       workdir: input.workdir,
       outputFile: "",
-      sandbox: input.sandbox,
       model: input.model,
       effort: input.effort,
     });

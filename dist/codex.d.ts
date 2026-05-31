@@ -1,4 +1,3 @@
-export type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
 export type RenderCodexConfigInput = {
     providerName: string;
     providerBaseUrl: string;
@@ -7,7 +6,6 @@ export type RenderCodexConfigInput = {
 export type BuildCodexArgsInput = {
     workdir: string;
     outputFile: string;
-    sandbox: SandboxMode;
     model: string;
     effort?: string;
 };

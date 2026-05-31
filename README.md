@@ -51,7 +51,6 @@ jobs:
           provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
           model: gpt-5.5
           effort: high
-          sandbox: read-only
 ```
 
 ## Provider Contract
@@ -81,10 +80,11 @@ wire_api = "responses"
 The request flow is:
 
 ```text
-Codex CLI -> temporary local proxy -> provider-base-url
+Codex CLI (--yolo) -> temporary local proxy -> provider-base-url
 ```
 
 The provider key is held by the action process only. It is not written to Codex `config.toml` or `auth.json`, and provider/GitHub token environment variables are removed from the Codex child process environment.
+Codex Reviewer tells Codex to run as a read-only reviewer in the prompt: inspect code and diff only, do not modify files or run mutating commands.
 
 ## Review Criteria
 
@@ -110,7 +110,7 @@ Findings must be actionable and tied to concrete risks. If there are no meaningf
 | `codex-version` | No | Version of `@openai/codex` to install. Defaults to `latest`. |
 | `effort` | No | Codex reasoning effort. |
 | `working-directory` | No | Directory passed to `codex exec --cd`. |
-| `sandbox` | No | Codex sandbox mode. Defaults to `read-only`. |
+| `sandbox` | No | Deprecated compatibility input. Codex Reviewer now runs `codex exec --yolo` and enforces read-only review behavior in the prompt. |
 
 ## Non-Goals
 

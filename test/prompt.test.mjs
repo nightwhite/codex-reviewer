@@ -35,6 +35,7 @@ test("buildReviewPrompt encodes senior reviewer criteria", () => {
   });
 
   for (const phrase of [
+    "/goal",
     "correctness bugs",
     "security vulnerabilities",
     "performance regressions",
@@ -45,6 +46,9 @@ test("buildReviewPrompt encodes senior reviewer criteria", () => {
     "files that are too long",
     "actionable",
     "line-specific",
+    "read-only",
+    "Do not modify files",
+    "Do not run commands that mutate",
   ]) {
     assert.match(prompt, new RegExp(phrase, "i"));
   }

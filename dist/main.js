@@ -16,7 +16,6 @@ async function main() {
         model,
         effort: optionalInput("effort"),
         workdir: optionalInput("working-directory") || process.cwd(),
-        sandbox: sandboxInput(optionalInput("sandbox") || "read-only"),
         commentMarker: "<!-- codex-reviewer:latest-commit -->",
     });
     core.setOutput("review", review);
@@ -41,12 +40,6 @@ function requiredEnv(name) {
         throw new Error(`${name} is required`);
     }
     return value;
-}
-function sandboxInput(value) {
-    if (value === "read-only" || value === "workspace-write" || value === "danger-full-access") {
-        return value;
-    }
-    throw new Error(`Invalid sandbox: ${value}`);
 }
 main().catch((error) => {
     core.setFailed(error instanceof Error ? error.message : String(error));

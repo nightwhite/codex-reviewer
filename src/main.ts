@@ -2,7 +2,6 @@ import * as core from "@actions/core";
 import { getOctokit } from "@actions/github";
 import { runReviewer } from "./reviewer.js";
 import { loadPullRequestContext } from "./github.js";
-import { SandboxMode } from "./codex.js";
 
 async function main(): Promise<void> {
   const token = requiredInput("github-token");
@@ -19,7 +18,6 @@ async function main(): Promise<void> {
     model,
     effort: optionalInput("effort"),
     workdir: optionalInput("working-directory") || process.cwd(),
-    sandbox: sandboxInput(optionalInput("sandbox") || "read-only"),
     commentMarker: "<!-- codex-reviewer:latest-commit -->",
   });
 
@@ -49,13 +47,6 @@ function requiredEnv(name: string): string {
     throw new Error(`${name} is required`);
   }
   return value;
-}
-
-function sandboxInput(value: string): SandboxMode {
-  if (value === "read-only" || value === "workspace-write" || value === "danger-full-access") {
-    return value;
-  }
-  throw new Error(`Invalid sandbox: ${value}`);
 }
 
 main().catch((error) => {

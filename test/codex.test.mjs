@@ -27,7 +27,6 @@ test("buildCodexArgs creates a deterministic codex exec invocation", () => {
     buildCodexArgs({
       workdir: "/repo",
       outputFile: "/tmp/final.md",
-      sandbox: "read-only",
       model: "gpt-5.5",
       effort: "high",
     }),
@@ -42,8 +41,7 @@ test("buildCodexArgs creates a deterministic codex exec invocation", () => {
       "gpt-5.5",
       "--config",
       'model_reasoning_effort="high"',
-      "--sandbox",
-      "read-only",
+      "--yolo",
     ],
   );
 });

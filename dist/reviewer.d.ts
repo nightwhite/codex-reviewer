@@ -1,4 +1,3 @@
-import { SandboxMode } from "./codex.js";
 import { GitHubClient, InlineReviewComment, PullRequestContext } from "./github.js";
 export type LatestCommitRangeInput = {
     headSha: string;
@@ -16,7 +15,6 @@ export type ReviewerInput = {
     model: string;
     effort?: string;
     workdir: string;
-    sandbox: SandboxMode;
     commentMarker: string;
 };
 export type CodexReview = {

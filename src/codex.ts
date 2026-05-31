@@ -3,8 +3,6 @@ import { mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-export type SandboxMode = "read-only" | "workspace-write" | "danger-full-access";
-
 export type RenderCodexConfigInput = {
   providerName: string;
   providerBaseUrl: string;
@@ -14,7 +12,6 @@ export type RenderCodexConfigInput = {
 export type BuildCodexArgsInput = {
   workdir: string;
   outputFile: string;
-  sandbox: SandboxMode;
   model: string;
   effort?: string;
 };
@@ -61,7 +58,7 @@ export function buildCodexArgs(input: BuildCodexArgsInput): string[] {
     args.push("--config", `model_reasoning_effort="${escapeTomlString(input.effort)}"`);
   }
 
-  args.push("--sandbox", input.sandbox);
+  args.push("--yolo");
   return args;
 }
 

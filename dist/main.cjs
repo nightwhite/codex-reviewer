@@ -23889,6 +23889,8 @@ var import_node_path2 = __toESM(require("node:path"), 1);
 // src/prompt.ts
 function buildReviewPrompt(input) {
   return [
+    "/goal Review only the latest pull request commit and produce an actionable GitHub PR review JSON.",
+    "",
     `Repository: ${input.owner}/${input.repo}`,
     `Pull request: #${input.pullNumber}`,
     `Title: ${input.title}`,
@@ -23912,6 +23914,9 @@ function buildReviewPrompt(input) {
     "- Files that are too long: new code that makes a file harder to navigate, review, or test; recommend a split only when it directly improves maintainability.",
     "",
     "Review discipline:",
+    "- Read-only operation: inspect code and diff only.",
+    "- Do not modify files, create files, delete files, format files, install dependencies, commit changes, push changes, or update GitHub state.",
+    "- Do not run commands that mutate the workspace, network services, databases, caches, package lockfiles, generated files, or repository metadata.",
     "- Be actionable: every finding must explain the concrete risk and the smallest useful fix.",
     "- Be line-specific when the diff gives enough context; mention file/function names from the diff.",
     "- Do not invent problems. If there are no meaningful findings, say so.",
@@ -23978,7 +23983,7 @@ function buildCodexArgs(input) {
   if (input.effort && input.effort.trim().length > 0) {
     args.push("--config", `model_reasoning_effort="${escapeTomlString(input.effort)}"`);
   }
-  args.push("--sandbox", input.sandbox);
+  args.push("--yolo");
   return args;
 }
 async function runCodexReview(input) {
@@ -24218,7 +24223,6 @@ async function runReviewer(input) {
       codexHome,
       workdir: input.workdir,
       outputFile: "",
-      sandbox: input.sandbox,
       model: input.model,
       effort: input.effort
     });
@@ -24307,7 +24311,6 @@ async function main() {
     model,
     effort: optionalInput("effort"),
     workdir: optionalInput("working-directory") || process.cwd(),
-    sandbox: sandboxInput(optionalInput("sandbox") || "read-only"),
     commentMarker: "<!-- codex-reviewer:latest-commit -->"
   });
   core.setOutput("review", review);
@@ -24332,12 +24335,6 @@ function requiredEnv(name) {
     throw new Error(`${name} is required`);
   }
   return value;
-}
-function sandboxInput(value) {
-  if (value === "read-only" || value === "workspace-write" || value === "danger-full-access") {
-    return value;
-  }
-  throw new Error(`Invalid sandbox: ${value}`);
 }
 main().catch((error) => {
   core.setFailed(error instanceof Error ? error.message : String(error));
