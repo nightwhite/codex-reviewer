@@ -56,9 +56,17 @@ jobs:
 
 ## Provider Contract
 
-The provider must be compatible with Codex `wire_api = "responses"`:
+Set `provider-base-url` to a real Responses-compatible provider URL that GitHub Actions can reach, for example:
 
-The generated Codex config points to a local proxy:
+```yaml
+provider-base-url: https://llm.example.com/v1
+provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
+model: gpt-5.5
+```
+
+Do not set `provider-base-url` to `127.0.0.1` unless you run a self-hosted GitHub runner with that provider on the same machine.
+
+Internally, the Action starts a temporary local proxy and writes a temporary `CODEX_HOME/config.toml` for Codex:
 
 ```toml
 model_provider = "codex-reviewer"
@@ -70,7 +78,13 @@ base_url = "http://127.0.0.1:<port>/v1"
 wire_api = "responses"
 ```
 
-The upstream `provider-base-url` and `provider-api-key` stay in the Action process. Codex only talks to `127.0.0.1`; the provider key is not written to `config.toml` and is not exposed in the Codex child process environment.
+That internal `127.0.0.1` URL is not your provider URL. The request flow is:
+
+```text
+Codex CLI -> temporary local proxy -> provider-base-url
+```
+
+The upstream `provider-base-url` and `provider-api-key` stay in the Action process. The provider key is not written to `config.toml` and is not exposed in the Codex child process environment.
 
 ## Review Criteria
 
