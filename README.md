@@ -50,7 +50,7 @@ jobs:
           provider-base-url: ${{ secrets.CODEX_PROVIDER_BASE_URL }}
           provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
           model: gpt-5.5
-          effort: high
+          effort: xhigh
 ```
 
 ## Provider Contract
