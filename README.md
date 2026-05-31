@@ -17,7 +17,7 @@ This repository already includes a ready-to-use workflow at `.github/workflows/c
 
 Add these repository settings before enabling it:
 
-- Secret: `CODEX_PROVIDER_BASE_URL`, for example `https://llm.example.com/v1`.
+- Secret: `CODEX_PROVIDER_BASE_URL`, for example `https://api.openai.com/v1`.
 - Secret: `CODEX_PROVIDER_API_KEY`.
 - Optional variable: `CODEX_REVIEW_MODEL`, defaults to `gpt-5.5` in the bundled workflow.
 
@@ -29,7 +29,7 @@ After that, every `pull_request.opened` and `pull_request.synchronize` run revie
 name: Codex review
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize]
 
 jobs:
@@ -44,7 +44,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: nightwhite/codex-reviewer@main
+      - uses: nightwhite/codex-reviewer@v1
         with:
           github-token: ${{ github.token }}
           provider-base-url: ${{ secrets.CODEX_PROVIDER_BASE_URL }}
@@ -59,10 +59,12 @@ jobs:
 Set `provider-base-url` to a real Responses-compatible provider URL that GitHub Actions can reach, for example:
 
 ```yaml
-provider-base-url: https://llm.example.com/v1
+provider-base-url: https://api.openai.com/v1
 provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
 model: gpt-5.5
 ```
+
+The reusable workflow uses `pull_request_target` so fork pull requests can be reviewed with repository secrets and write a PR review. Keep `actions/checkout` on the default base repository checkout; do not checkout the pull request head before running this action.
 
 Internally, the action writes `provider-base-url` directly into a temporary `CODEX_HOME/config.toml`:
 
