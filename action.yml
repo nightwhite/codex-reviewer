@@ -59,4 +59,4 @@ runs:
         INPUT_EFFORT: ${{ inputs.effort }}
         INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
         INPUT_SANDBOX: ${{ inputs.sandbox }}
-      run: node "${{ github.action_path }}/dist/main.js"
+      run: node "${{ github.action_path }}/dist/main.cjs"
