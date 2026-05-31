@@ -1,3 +1,3 @@
-export function firstUserName(users) {
-  return users[0].name;
+export function lastUserName(users) {
+  return users[users.length - 1].name;
 }
