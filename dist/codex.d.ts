@@ -19,11 +19,6 @@ export declare function renderCodexConfig(input: RenderCodexConfigInput): string
 export declare function writeCodexConfig(input: RenderCodexConfigInput & {
     codexHome: string;
 }): Promise<void>;
-export declare function renderCodexAuth(providerApiKey: string): string;
-export declare function writeCodexAuth(input: {
-    codexHome: string;
-    providerApiKey: string;
-}): Promise<void>;
 export declare function buildCodexArgs(input: BuildCodexArgsInput): string[];
 export declare function runCodexReview(input: RunCodexReviewInput): Promise<string>;
 export declare function buildCodexEnvironment(input: {

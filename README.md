@@ -2,7 +2,7 @@
 
 Codex Reviewer is a GitHub Action that reviews only the latest commit in a pull request by running `codex exec`.
 
-It is built for Codex model providers, not direct ChatGPT-style API calls. The action writes a temporary Codex home with `config.toml` and `auth.json`, then runs `codex exec`.
+It is built for Codex model providers, not direct ChatGPT-style API calls. The action starts a temporary local provider proxy, writes a temporary Codex `config.toml`, then runs `codex exec`.
 
 ## What It Reviews
 
@@ -66,7 +66,7 @@ model: gpt-5.5
 
 The reusable workflow uses `pull_request_target` so fork pull requests can be reviewed with repository secrets and write a PR review. Keep `actions/checkout` on the default base repository checkout; do not checkout the pull request head before running this action.
 
-Internally, the action writes `provider-base-url` directly into a temporary `CODEX_HOME/config.toml`:
+Internally, the action starts a temporary local proxy and writes that local proxy URL into `CODEX_HOME/config.toml`:
 
 ```toml
 model_provider = "codex-reviewer"
@@ -74,27 +74,17 @@ model = "<model>"
 
 [model_providers.codex-reviewer]
 name = "Codex Reviewer Provider"
-base_url = "<provider-base-url>"
+base_url = "http://127.0.0.1:<port>/v1"
 wire_api = "responses"
-requires_openai_auth = true
-```
-
-The action writes `provider-api-key` into the temporary `CODEX_HOME/auth.json`:
-
-```json
-{
-  "OPENAI_API_KEY": "<provider-api-key>",
-  "auth_mode": "apikey"
-}
 ```
 
 The request flow is:
 
 ```text
-Codex CLI -> provider-base-url
+Codex CLI -> temporary local proxy -> provider-base-url
 ```
 
-The provider key is not written to `config.toml` and is removed from the Codex child process environment.
+The provider key is held by the action process only. It is not written to Codex `config.toml` or `auth.json`, and provider/GitHub token environment variables are removed from the Codex child process environment.
 
 ## Review Criteria
 

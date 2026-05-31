@@ -2,7 +2,8 @@ import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { buildReviewPrompt } from "./prompt.js";
-import { runCodexReview, writeCodexAuth, writeCodexConfig } from "./codex.js";
+import { runCodexReview, writeCodexConfig } from "./codex.js";
+import { startProviderProxy } from "./providerProxy.js";
 import { createPullRequestReview, getLatestCommitParentSha, getLatestCommitDiff, } from "./github.js";
 const projectName = "codex-reviewer";
 const projectUrl = "https://github.com/nightwhite/codex-reviewer";
@@ -24,44 +25,49 @@ export async function runReviewer(input) {
     });
     const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
     const codexHome = await mkdtemp(path.join(tmpdir(), "codex-reviewer-home-"));
-    await writeCodexConfig({
-        codexHome,
-        providerName: "codex-reviewer",
-        providerBaseUrl: input.providerBaseUrl,
-        model: input.model,
+    const proxy = await startProviderProxy({
+        upstreamBaseUrl: input.providerBaseUrl,
+        apiKey: input.providerApiKey,
     });
-    await writeCodexAuth({
-        codexHome,
-        providerApiKey: input.providerApiKey,
-    });
-    const rawReview = await runCodexReview({
-        prompt: buildReviewPrompt({
-            owner: input.pullRequest.owner,
-            repo: input.pullRequest.repo,
-            pullNumber: input.pullRequest.pullNumber,
-            title: input.pullRequest.title,
-            body: input.pullRequest.body,
-            baseSha: range.base,
-            headSha: range.head,
-            diff,
-        }),
-        codexHome,
-        workdir: input.workdir,
-        outputFile: "",
-        sandbox: input.sandbox,
-        model: input.model,
-        effort: input.effort,
-    });
-    const review = parseCodexReview(rawReview);
-    await createPullRequestReview(input.github, input.pullRequest, {
-        body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
-        commitSha: range.head,
-        comments: review.inlineComments.map((comment) => ({
-            ...comment,
-            body: formatInlineCommentBody(comment.body),
-        })),
-    });
-    return review.summaryMarkdown;
+    try {
+        await writeCodexConfig({
+            codexHome,
+            providerName: "codex-reviewer",
+            providerBaseUrl: proxy.baseUrl,
+            model: input.model,
+        });
+        const rawReview = await runCodexReview({
+            prompt: buildReviewPrompt({
+                owner: input.pullRequest.owner,
+                repo: input.pullRequest.repo,
+                pullNumber: input.pullRequest.pullNumber,
+                title: input.pullRequest.title,
+                body: input.pullRequest.body,
+                baseSha: range.base,
+                headSha: range.head,
+                diff,
+            }),
+            codexHome,
+            workdir: input.workdir,
+            outputFile: "",
+            sandbox: input.sandbox,
+            model: input.model,
+            effort: input.effort,
+        });
+        const review = parseCodexReview(rawReview);
+        await createPullRequestReview(input.github, input.pullRequest, {
+            body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
+            commitSha: range.head,
+            comments: review.inlineComments.map((comment) => ({
+                ...comment,
+                body: formatInlineCommentBody(comment.body),
+            })),
+        });
+        return review.summaryMarkdown;
+    }
+    finally {
+        await proxy.close();
+    }
 }
 export function parseCodexReview(rawReview) {
     const parsed = JSON.parse(stripJsonFence(rawReview));

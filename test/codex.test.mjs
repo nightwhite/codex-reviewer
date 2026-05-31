@@ -4,30 +4,22 @@ import test from "node:test";
 import {
   buildCodexArgs,
   buildCodexEnvironment,
-  renderCodexAuth,
   renderCodexConfig,
 } from "../dist/codex.js";
 
-test("renderCodexConfig points Codex directly at the configured Responses provider", () => {
+test("renderCodexConfig points Codex at the local Responses proxy without provider auth", () => {
   const config = renderCodexConfig({
     providerName: "codex-reviewer",
-    providerBaseUrl: "https://provider.example/v1",
+    providerBaseUrl: "http://127.0.0.1:4321/v1",
     model: "gpt-5.5",
   });
 
   assert.match(config, /model_provider = "codex-reviewer"/);
   assert.match(config, /model = "gpt-5.5"/);
-  assert.match(config, /base_url = "https:\/\/provider\.example\/v1"/);
+  assert.match(config, /base_url = "http:\/\/127\.0\.0\.1:4321\/v1"/);
   assert.match(config, /wire_api = "responses"/);
-  assert.match(config, /requires_openai_auth = true/);
+  assert.doesNotMatch(config, /requires_openai_auth/);
   assert.doesNotMatch(config, /sk-/);
-});
-
-test("renderCodexAuth writes the provider API key in Codex auth.json format", () => {
-  assert.deepEqual(JSON.parse(renderCodexAuth("secret-key")), {
-    OPENAI_API_KEY: "secret-key",
-    auth_mode: "apikey",
-  });
 });
 
 test("buildCodexArgs creates a deterministic codex exec invocation", () => {
@@ -65,6 +57,10 @@ test("buildCodexEnvironment does not expose provider credentials to Codex", () =
       CODEX_PROVIDER_API_KEY: "must-not-leak",
       INPUT_PROVIDER_API_KEY: "must-not-leak",
       OPENAI_API_KEY: "must-not-leak",
+      INPUT_GITHUB_TOKEN: "must-not-leak",
+      GITHUB_TOKEN: "must-not-leak",
+      GH_TOKEN: "must-not-leak",
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: "must-not-leak",
     },
   });
 
@@ -74,4 +70,8 @@ test("buildCodexEnvironment does not expose provider credentials to Codex", () =
   assert.equal(env.CODEX_PROVIDER_API_KEY, undefined);
   assert.equal(env.INPUT_PROVIDER_API_KEY, undefined);
   assert.equal(env.OPENAI_API_KEY, undefined);
+  assert.equal(env.INPUT_GITHUB_TOKEN, undefined);
+  assert.equal(env.GITHUB_TOKEN, undefined);
+  assert.equal(env.GH_TOKEN, undefined);
+  assert.equal(env.ACTIONS_ID_TOKEN_REQUEST_TOKEN, undefined);
 });

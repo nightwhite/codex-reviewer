@@ -33,7 +33,6 @@ export function renderCodexConfig(input: RenderCodexConfigInput): string {
     'name = "Codex Reviewer Provider"',
     `base_url = "${escapeTomlString(input.providerBaseUrl)}"`,
     'wire_api = "responses"',
-    "requires_openai_auth = true",
     "",
   ].join("\n");
 }
@@ -44,20 +43,6 @@ export async function writeCodexConfig(input: RenderCodexConfigInput & { codexHo
     renderCodexConfig(input),
     "utf8",
   );
-}
-
-export function renderCodexAuth(providerApiKey: string): string {
-  return `${JSON.stringify({
-    OPENAI_API_KEY: providerApiKey,
-    auth_mode: "apikey",
-  }, null, 2)}\n`;
-}
-
-export async function writeCodexAuth(input: {
-  codexHome: string;
-  providerApiKey: string;
-}): Promise<void> {
-  await writeFile(path.join(input.codexHome, "auth.json"), renderCodexAuth(input.providerApiKey), "utf8");
 }
 
 export function buildCodexArgs(input: BuildCodexArgsInput): string[] {
@@ -115,6 +100,11 @@ export function buildCodexEnvironment(input: {
   delete env.CODEX_PROVIDER_API_KEY;
   delete env.INPUT_PROVIDER_API_KEY;
   delete env.OPENAI_API_KEY;
+  delete env.INPUT_GITHUB_TOKEN;
+  delete env.GITHUB_TOKEN;
+  delete env.GH_TOKEN;
+  delete env.ACTIONS_ID_TOKEN_REQUEST_TOKEN;
+  delete env.ACTIONS_ID_TOKEN_REQUEST_URL;
   env.CODEX_HOME = input.codexHome;
   env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE = "codex_reviewer_github_action";
   return env;
