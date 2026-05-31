@@ -2,6 +2,7 @@
   "name": "codex-reviewer",
   "version": "0.0.0",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "build": "tsc && esbuild src/main.ts --bundle --platform=node --target=node20 --format=cjs --outfile=dist/main.cjs",
