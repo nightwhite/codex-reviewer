@@ -11,11 +11,21 @@ export function renderCodexConfig(input) {
         'name = "Codex Reviewer Provider"',
         `base_url = "${escapeTomlString(input.providerBaseUrl)}"`,
         'wire_api = "responses"',
+        "requires_openai_auth = true",
         "",
     ].join("\n");
 }
 export async function writeCodexConfig(input) {
     await writeFile(path.join(input.codexHome, "config.toml"), renderCodexConfig(input), "utf8");
+}
+export function renderCodexAuth(providerApiKey) {
+    return `${JSON.stringify({
+        OPENAI_API_KEY: providerApiKey,
+        auth_mode: "apikey",
+    }, null, 2)}\n`;
+}
+export async function writeCodexAuth(input) {
+    await writeFile(path.join(input.codexHome, "auth.json"), renderCodexAuth(input.providerApiKey), "utf8");
 }
 export function buildCodexArgs(input) {
     const args = [
@@ -59,6 +69,9 @@ export async function runCodexReview(input) {
 export function buildCodexEnvironment(input) {
     const env = { ...(input.baseEnv ?? process.env) };
     delete env.CODEX_REVIEWER_API_KEY;
+    delete env.CODEX_PROVIDER_API_KEY;
+    delete env.INPUT_PROVIDER_API_KEY;
+    delete env.OPENAI_API_KEY;
     env.CODEX_HOME = input.codexHome;
     env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE = "codex_reviewer_github_action";
     return env;

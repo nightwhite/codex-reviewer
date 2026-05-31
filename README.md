@@ -2,7 +2,7 @@
 
 Codex Reviewer is a GitHub Action that reviews only the latest commit in a pull request by running `codex exec`.
 
-It is built for Codex model providers, not direct ChatGPT-style API calls. The first version supports OpenAI Responses API compatible providers through a temporary local proxy and `CODEX_HOME/config.toml`.
+It is built for Codex model providers, not direct ChatGPT-style API calls. The action writes a temporary Codex home with `config.toml` and `auth.json`, then runs `codex exec`.
 
 ## What It Reviews
 
@@ -64,9 +64,7 @@ provider-api-key: ${{ secrets.CODEX_PROVIDER_API_KEY }}
 model: gpt-5.5
 ```
 
-Do not set `provider-base-url` to `127.0.0.1` unless you run a self-hosted GitHub runner with that provider on the same machine.
-
-Internally, the Action starts a temporary local proxy and writes a temporary `CODEX_HOME/config.toml` for Codex:
+Internally, the action writes `provider-base-url` directly into a temporary `CODEX_HOME/config.toml`:
 
 ```toml
 model_provider = "codex-reviewer"
@@ -74,17 +72,27 @@ model = "<model>"
 
 [model_providers.codex-reviewer]
 name = "Codex Reviewer Provider"
-base_url = "http://127.0.0.1:<port>/v1"
+base_url = "<provider-base-url>"
 wire_api = "responses"
+requires_openai_auth = true
 ```
 
-That internal `127.0.0.1` URL is not your provider URL. The request flow is:
+The action writes `provider-api-key` into the temporary `CODEX_HOME/auth.json`:
+
+```json
+{
+  "OPENAI_API_KEY": "<provider-api-key>",
+  "auth_mode": "apikey"
+}
+```
+
+The request flow is:
 
 ```text
-Codex CLI -> temporary local proxy -> provider-base-url
+Codex CLI -> provider-base-url
 ```
 
-The upstream `provider-base-url` and `provider-api-key` stay in the Action process. The provider key is not written to `config.toml` and is not exposed in the Codex child process environment.
+The provider key is not written to `config.toml` and is removed from the Codex child process environment.
 
 ## Review Criteria
 

@@ -296,7 +296,7 @@ var require_tunnel = __commonJS({
     "use strict";
     var net = require("net");
     var tls = require("tls");
-    var http2 = require("http");
+    var http = require("http");
     var https = require("https");
     var events = require("events");
     var assert = require("assert");
@@ -307,12 +307,12 @@ var require_tunnel = __commonJS({
     exports2.httpsOverHttps = httpsOverHttps;
     function httpOverHttp(options) {
       var agent = new TunnelingAgent(options);
-      agent.request = http2.request;
+      agent.request = http.request;
       return agent;
     }
     function httpsOverHttp(options) {
       var agent = new TunnelingAgent(options);
-      agent.request = http2.request;
+      agent.request = http.request;
       agent.createSocket = createSecureSocket;
       agent.defaultPort = 443;
       return agent;
@@ -333,7 +333,7 @@ var require_tunnel = __commonJS({
       var self = this;
       self.options = options || {};
       self.proxyOptions = self.options.proxy || {};
-      self.maxSockets = self.options.maxSockets || http2.Agent.defaultMaxSockets;
+      self.maxSockets = self.options.maxSockets || http.Agent.defaultMaxSockets;
       self.requests = [];
       self.sockets = [];
       self.on("free", function onFree(socket, host, port, localAddress) {
@@ -932,7 +932,7 @@ var require_util = __commonJS({
     "use strict";
     var assert = require("assert");
     var { kDestroyed, kBodyUsed } = require_symbols();
-    var { IncomingMessage: IncomingMessage2 } = require("http");
+    var { IncomingMessage } = require("http");
     var stream = require("stream");
     var net = require("net");
     var { InvalidArgumentError } = require_errors();
@@ -1064,7 +1064,7 @@ var require_util = __commonJS({
         return;
       }
       if (typeof stream2.destroy === "function") {
-        if (Object.getPrototypeOf(stream2).constructor === IncomingMessage2) {
+        if (Object.getPrototypeOf(stream2).constructor === IncomingMessage) {
           stream2.socket = null;
         }
         stream2.destroy(err);
@@ -6864,7 +6864,7 @@ var require_client = __commonJS({
     "use strict";
     var assert = require("assert");
     var net = require("net");
-    var http2 = require("http");
+    var http = require("http");
     var { pipeline } = require("stream");
     var util = require_util();
     var timers = require_timers();
@@ -6937,11 +6937,11 @@ var require_client = __commonJS({
       kHTTP2CopyHeaders,
       kHTTP1BuildRequest
     } = require_symbols();
-    var http22;
+    var http2;
     try {
-      http22 = require("http2");
+      http2 = require("http2");
     } catch {
-      http22 = { constants: {} };
+      http2 = { constants: {} };
     }
     var {
       constants: {
@@ -6953,7 +6953,7 @@ var require_client = __commonJS({
         HTTP2_HEADER_EXPECT,
         HTTP2_HEADER_STATUS
       }
-    } = http22;
+    } = http2;
     var h2ExperimentalWarned = false;
     var FastBuffer = Buffer[Symbol.species];
     var kClosedResolve = /* @__PURE__ */ Symbol("kClosedResolve");
@@ -7086,7 +7086,7 @@ var require_client = __commonJS({
         this[kConnector] = connect2;
         this[kSocket] = null;
         this[kPipelining] = pipelining != null ? pipelining : 1;
-        this[kMaxHeadersSize] = maxHeaderSize || http2.maxHeaderSize;
+        this[kMaxHeadersSize] = maxHeaderSize || http.maxHeaderSize;
         this[kKeepAliveDefaultTimeout] = keepAliveTimeout == null ? 4e3 : keepAliveTimeout;
         this[kKeepAliveMaxTimeout] = keepAliveMaxTimeout == null ? 6e5 : keepAliveMaxTimeout;
         this[kKeepAliveTimeoutThreshold] = keepAliveTimeoutThreshold == null ? 1e3 : keepAliveTimeoutThreshold;
@@ -7794,7 +7794,7 @@ var require_client = __commonJS({
               code: "UNDICI-H2"
             });
           }
-          const session = http22.connect(client[kUrl], {
+          const session = http2.connect(client[kUrl], {
             createConnection: () => socket,
             peerMaxConcurrentStreams: client[kHTTP2SessionState].maxConcurrentStreams
           });
@@ -13046,7 +13046,7 @@ var require_fetch = __commonJS({
         this.emit("terminated", error);
       }
     };
-    function fetch2(input, init = {}) {
+    function fetch(input, init = {}) {
       webidl.argumentLengthCheck(arguments, 1, { header: "globalThis.fetch" });
       const p = createDeferredPromise();
       let requestObject;
@@ -13976,7 +13976,7 @@ var require_fetch = __commonJS({
       }
     }
     module2.exports = {
-      fetch: fetch2,
+      fetch,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -17232,7 +17232,7 @@ var require_undici = __commonJS({
     module2.exports.getGlobalDispatcher = getGlobalDispatcher;
     if (util.nodeMajor > 16 || util.nodeMajor === 16 && util.nodeMinor >= 8) {
       let fetchImpl = null;
-      module2.exports.fetch = async function fetch2(resource) {
+      module2.exports.fetch = async function fetch(resource) {
         if (!fetchImpl) {
           fetchImpl = require_fetch().fetch;
         }
@@ -17344,7 +17344,7 @@ var require_lib = __commonJS({
     };
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.HttpClient = exports2.isHttps = exports2.HttpClientResponse = exports2.HttpClientError = exports2.getProxyUrl = exports2.MediaTypes = exports2.Headers = exports2.HttpCodes = void 0;
-    var http2 = __importStar(require("http"));
+    var http = __importStar(require("http"));
     var https = __importStar(require("https"));
     var pm = __importStar(require_proxy());
     var tunnel = __importStar(require_tunnel2());
@@ -17736,7 +17736,7 @@ var require_lib = __commonJS({
         const info = {};
         info.parsedUrl = requestUrl;
         const usingSsl = info.parsedUrl.protocol === "https:";
-        info.httpModule = usingSsl ? https : http2;
+        info.httpModule = usingSsl ? https : http;
         const defaultPort = usingSsl ? 443 : 80;
         info.options = {};
         info.options.host = info.parsedUrl.hostname;
@@ -17784,7 +17784,7 @@ var require_lib = __commonJS({
         const usingSsl = parsedUrl.protocol === "https:";
         let maxSockets = 100;
         if (this.requestOptions) {
-          maxSockets = this.requestOptions.maxSockets || http2.globalAgent.maxSockets;
+          maxSockets = this.requestOptions.maxSockets || http.globalAgent.maxSockets;
         }
         if (proxyUrl && proxyUrl.hostname) {
           const agentOptions = {
@@ -17806,7 +17806,7 @@ var require_lib = __commonJS({
         }
         if (!agent) {
           const options = { keepAlive: this._keepAlive, maxSockets };
-          agent = usingSsl ? new https.Agent(options) : new http2.Agent(options);
+          agent = usingSsl ? new https.Agent(options) : new http.Agent(options);
           this._agent = agent;
         }
         if (usingSsl && this._ignoreSslError) {
@@ -20708,16 +20708,16 @@ var require_dist_node5 = __commonJS({
       let headers = {};
       let status;
       let url;
-      let { fetch: fetch2 } = globalThis;
+      let { fetch } = globalThis;
       if ((_b = requestOptions.request) == null ? void 0 : _b.fetch) {
-        fetch2 = requestOptions.request.fetch;
+        fetch = requestOptions.request.fetch;
       }
-      if (!fetch2) {
+      if (!fetch) {
         throw new Error(
           "fetch is not set. Please pass a fetch implementation as new Octokit({ request: { fetch }}). Learn more at https://github.com/octokit/octokit.js/#fetch-missing"
         );
       }
-      return fetch2(requestOptions.url, {
+      return fetch(requestOptions.url, {
         method: requestOptions.method,
         body: requestOptions.body,
         redirect: (_c = requestOptions.request) == null ? void 0 : _c.redirect,
@@ -23954,6 +23954,7 @@ function renderCodexConfig(input) {
     'name = "Codex Reviewer Provider"',
     `base_url = "${escapeTomlString(input.providerBaseUrl)}"`,
     'wire_api = "responses"',
+    "requires_openai_auth = true",
     ""
   ].join("\n");
 }
@@ -23963,6 +23964,16 @@ async function writeCodexConfig(input) {
     renderCodexConfig(input),
     "utf8"
   );
+}
+function renderCodexAuth(providerApiKey) {
+  return `${JSON.stringify({
+    OPENAI_API_KEY: providerApiKey,
+    auth_mode: "apikey"
+  }, null, 2)}
+`;
+}
+async function writeCodexAuth(input) {
+  await (0, import_promises.writeFile)(import_node_path.default.join(input.codexHome, "auth.json"), renderCodexAuth(input.providerApiKey), "utf8");
 }
 function buildCodexArgs(input) {
   const args = [
@@ -24006,96 +24017,15 @@ async function runCodexReview(input) {
 function buildCodexEnvironment(input) {
   const env = { ...input.baseEnv ?? process.env };
   delete env.CODEX_REVIEWER_API_KEY;
+  delete env.CODEX_PROVIDER_API_KEY;
+  delete env.INPUT_PROVIDER_API_KEY;
+  delete env.OPENAI_API_KEY;
   env.CODEX_HOME = input.codexHome;
   env.CODEX_INTERNAL_ORIGINATOR_OVERRIDE = "codex_reviewer_github_action";
   return env;
 }
 function escapeTomlString(value) {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
-}
-
-// src/providerProxy.ts
-var import_node_http = __toESM(require("node:http"), 1);
-function createProxyRequestOptions(input) {
-  if (input.path !== "/v1/responses") {
-    throw new Error("Codex Reviewer proxy only forwards /v1/responses requests.");
-  }
-  const upstream = new URL(input.upstreamBaseUrl);
-  const upstreamPath = upstream.pathname.replace(/\/$/, "");
-  upstream.pathname = `${upstreamPath}/responses`;
-  return {
-    url: upstream.toString(),
-    headers: {
-      authorization: `Bearer ${input.apiKey}`,
-      "content-type": "application/json"
-    }
-  };
-}
-async function startProviderProxy(input) {
-  const server = import_node_http.default.createServer((request, response) => {
-    void proxyResponsesRequest(request, response, input);
-  });
-  await new Promise((resolve, reject) => {
-    server.once("error", reject);
-    server.listen(0, "127.0.0.1", () => {
-      server.off("error", reject);
-      resolve();
-    });
-  });
-  const address = server.address();
-  if (address == null || typeof address === "string") {
-    throw new Error("Provider proxy did not bind to a TCP port.");
-  }
-  return {
-    baseUrl: `http://127.0.0.1:${address.port}/v1`,
-    close: () => new Promise((resolve, reject) => {
-      server.close((error) => {
-        if (error) {
-          reject(error);
-          return;
-        }
-        resolve();
-      });
-    })
-  };
-}
-async function proxyResponsesRequest(request, response, input) {
-  try {
-    if (request.method !== "POST") {
-      response.writeHead(405, { "content-type": "application/json" });
-      response.end(JSON.stringify({ error: "Only POST is supported." }));
-      return;
-    }
-    const body = await readRequestBody(request);
-    const options = createProxyRequestOptions({
-      upstreamBaseUrl: input.upstreamBaseUrl,
-      apiKey: input.apiKey,
-      path: request.url ?? ""
-    });
-    const upstreamResponse = await fetch(options.url, {
-      method: "POST",
-      headers: options.headers,
-      body: new Uint8Array(body)
-    });
-    response.writeHead(upstreamResponse.status, {
-      "content-type": upstreamResponse.headers.get("content-type") ?? "application/json"
-    });
-    response.end(Buffer.from(await upstreamResponse.arrayBuffer()));
-  } catch (error) {
-    response.writeHead(502, { "content-type": "application/json" });
-    response.end(
-      JSON.stringify({
-        error: error instanceof Error ? error.message : String(error)
-      })
-    );
-  }
-}
-async function readRequestBody(request) {
-  const chunks = [];
-  for await (const chunk of request) {
-    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-  }
-  return Buffer.concat(chunks);
 }
 
 // src/github.ts
@@ -24185,48 +24115,44 @@ async function runReviewer(input) {
   });
   const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
   const codexHome = await (0, import_promises3.mkdtemp)(import_node_path2.default.join((0, import_node_os2.tmpdir)(), "codex-reviewer-home-"));
-  const proxy = await startProviderProxy({
-    upstreamBaseUrl: input.providerBaseUrl,
-    apiKey: input.providerApiKey
+  await writeCodexConfig({
+    codexHome,
+    providerName: "codex-reviewer",
+    providerBaseUrl: input.providerBaseUrl,
+    model: input.model
   });
-  try {
-    await writeCodexConfig({
-      codexHome,
-      providerName: "codex-reviewer",
-      providerBaseUrl: proxy.baseUrl,
-      model: input.model
-    });
-    const rawReview = await runCodexReview({
-      prompt: buildReviewPrompt({
-        owner: input.pullRequest.owner,
-        repo: input.pullRequest.repo,
-        pullNumber: input.pullRequest.pullNumber,
-        title: input.pullRequest.title,
-        body: input.pullRequest.body,
-        baseSha: range.base,
-        headSha: range.head,
-        diff
-      }),
-      codexHome,
-      workdir: input.workdir,
-      outputFile: "",
-      sandbox: input.sandbox,
-      model: input.model,
-      effort: input.effort
-    });
-    const review = parseCodexReview(rawReview);
-    await createPullRequestReview(input.github, input.pullRequest, {
-      body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
-      commitSha: range.head,
-      comments: review.inlineComments.map((comment) => ({
-        ...comment,
-        body: formatInlineCommentBody(comment.body)
-      }))
-    });
-    return review.summaryMarkdown;
-  } finally {
-    await proxy.close();
-  }
+  await writeCodexAuth({
+    codexHome,
+    providerApiKey: input.providerApiKey
+  });
+  const rawReview = await runCodexReview({
+    prompt: buildReviewPrompt({
+      owner: input.pullRequest.owner,
+      repo: input.pullRequest.repo,
+      pullNumber: input.pullRequest.pullNumber,
+      title: input.pullRequest.title,
+      body: input.pullRequest.body,
+      baseSha: range.base,
+      headSha: range.head,
+      diff
+    }),
+    codexHome,
+    workdir: input.workdir,
+    outputFile: "",
+    sandbox: input.sandbox,
+    model: input.model,
+    effort: input.effort
+  });
+  const review = parseCodexReview(rawReview);
+  await createPullRequestReview(input.github, input.pullRequest, {
+    body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
+    commitSha: range.head,
+    comments: review.inlineComments.map((comment) => ({
+      ...comment,
+      body: formatInlineCommentBody(comment.body)
+    }))
+  });
+  return review.summaryMarkdown;
 }
 function parseCodexReview(rawReview) {
   const parsed = JSON.parse(stripJsonFence(rawReview));
