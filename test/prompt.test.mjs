@@ -36,6 +36,10 @@ test("buildReviewPrompt encodes senior reviewer criteria", () => {
 
   for (const phrase of [
     "/goal",
+    "scope check",
+    "production readiness",
+    "severity",
+    "confidence",
     "correctness bugs",
     "security vulnerabilities",
     "performance regressions",
@@ -43,9 +47,16 @@ test("buildReviewPrompt encodes senior reviewer criteria", () => {
     "API design",
     "encapsulation",
     "modularity",
+    "SQL and data safety",
+    "race conditions and concurrency",
+    "LLM output trust boundaries",
+    "shell injection",
+    "enum and value completeness",
+    "documentation staleness",
     "files that are too long",
     "actionable",
     "line-specific",
+    "Do not report speculative findings",
     "read-only",
     "Do not modify files",
     "Do not run commands that mutate",
@@ -72,4 +83,7 @@ test("buildReviewPrompt requests structured PR review JSON", () => {
   assert.match(prompt, /"path"/);
   assert.match(prompt, /"line"/);
   assert.match(prompt, /"body"/);
+  assert.match(prompt, /"severity"/);
+  assert.match(prompt, /"confidence"/);
+  assert.match(prompt, /"category"/);
 });
