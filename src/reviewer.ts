@@ -9,8 +9,10 @@ import {
   InlineReviewComment,
   PullRequestContext,
   createPullRequestReview,
+  filterResolvableInlineComments,
   getLatestCommitParentSha,
   getLatestCommitDiff,
+  parseResolvableDiffLines,
 } from "./github.js";
 
 export type LatestCommitRangeInput = {
@@ -60,6 +62,7 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
     parentSha,
   });
   const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
+  const resolvableLines = parseResolvableDiffLines(diff);
   const codexHome = await mkdtemp(path.join(tmpdir(), "codex-reviewer-home-"));
   const proxy = await startProviderProxy({
     upstreamBaseUrl: input.providerBaseUrl,
@@ -84,6 +87,7 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
         baseSha: range.base,
         headSha: range.head,
         diff,
+        resolvableLines,
       }),
       codexHome,
       workdir: input.workdir,
@@ -96,10 +100,12 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
     await createPullRequestReview(input.github, input.pullRequest, {
       body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
       commitSha: range.head,
-      comments: review.inlineComments.map((comment) => ({
-        ...comment,
-        body: formatInlineCommentBody(comment.body),
-      })),
+      comments: filterResolvableInlineComments(review.inlineComments, resolvableLines).map(
+        (comment) => ({
+          ...comment,
+          body: formatInlineCommentBody(comment.body),
+        }),
+      ),
     });
 
     return review.summaryMarkdown;

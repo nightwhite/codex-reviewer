@@ -4,7 +4,12 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { createPullRequestReview, loadPullRequestContext } from "../dist/github.js";
+import {
+  createPullRequestReview,
+  filterResolvableInlineComments,
+  loadPullRequestContext,
+  parseResolvableDiffLines,
+} from "../dist/github.js";
 
 test("loadPullRequestContext reads the base repository and PR head sha", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "codex-reviewer-event-"));
@@ -92,4 +97,54 @@ test("createPullRequestReview submits a GitHub PR review with inline comments", 
       body: "This can throw on empty input.",
     },
   ]);
+});
+
+test("parseResolvableDiffLines returns only added right-side diff lines", () => {
+  const diff = [
+    "diff --git a/src/app.ts b/src/app.ts",
+    "index 1111111..2222222 100644",
+    "--- a/src/app.ts",
+    "+++ b/src/app.ts",
+    "@@ -10,3 +20,4 @@ export function app() {",
+    " context();",
+    "-removed();",
+    "+added();",
+    "+changed();",
+    "}",
+  ].join("\n");
+
+  assert.deepEqual(parseResolvableDiffLines(diff), new Map([
+    ["src/app.ts", new Set([21, 22])],
+  ]));
+});
+
+test("filterResolvableInlineComments drops comments outside added diff lines", () => {
+  const resolvableLines = new Map([
+    ["web/src/components/dashboard/DashboardData.ts", new Set([2, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 74, 75, 76, 77, 240, 277, 278, 279])],
+  ]);
+
+  assert.deepEqual(
+    filterResolvableInlineComments(
+      [
+        {
+          path: "web/src/components/dashboard/DashboardData.ts",
+          line: 251,
+          body: "This line is unchanged context and GitHub cannot resolve it.",
+        },
+        {
+          path: "web/src/components/dashboard/DashboardData.ts",
+          line: 240,
+          body: "This is an added line in the latest diff.",
+        },
+      ],
+      resolvableLines,
+    ),
+    [
+      {
+        path: "web/src/components/dashboard/DashboardData.ts",
+        line: 240,
+        body: "This is an added line in the latest diff.",
+      },
+    ],
+  );
 });

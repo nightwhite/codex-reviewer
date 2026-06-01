@@ -4,7 +4,7 @@ import path from "node:path";
 import { buildReviewPrompt } from "./prompt.js";
 import { runCodexReview, writeCodexConfig } from "./codex.js";
 import { startProviderProxy } from "./providerProxy.js";
-import { createPullRequestReview, getLatestCommitParentSha, getLatestCommitDiff, } from "./github.js";
+import { createPullRequestReview, filterResolvableInlineComments, getLatestCommitParentSha, getLatestCommitDiff, parseResolvableDiffLines, } from "./github.js";
 const projectName = "codex-reviewer";
 const projectUrl = "https://github.com/nightwhite/codex-reviewer";
 const projectLink = `[${projectName}](${projectUrl})`;
@@ -24,6 +24,7 @@ export async function runReviewer(input) {
         parentSha,
     });
     const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
+    const resolvableLines = parseResolvableDiffLines(diff);
     const codexHome = await mkdtemp(path.join(tmpdir(), "codex-reviewer-home-"));
     const proxy = await startProviderProxy({
         upstreamBaseUrl: input.providerBaseUrl,
@@ -46,6 +47,7 @@ export async function runReviewer(input) {
                 baseSha: range.base,
                 headSha: range.head,
                 diff,
+                resolvableLines,
             }),
             codexHome,
             workdir: input.workdir,
@@ -57,7 +59,7 @@ export async function runReviewer(input) {
         await createPullRequestReview(input.github, input.pullRequest, {
             body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
             commitSha: range.head,
-            comments: review.inlineComments.map((comment) => ({
+            comments: filterResolvableInlineComments(review.inlineComments, resolvableLines).map((comment) => ({
                 ...comment,
                 body: formatInlineCommentBody(comment.body),
             })),

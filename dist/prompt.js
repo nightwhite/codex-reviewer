@@ -35,6 +35,7 @@ export function buildReviewPrompt(input) {
         "- The latest commit diff is the source of truth.",
         "- Do not review older commits in this pull request.",
         "- Do not comment on existing code unless the latest commit directly creates or exposes the issue.",
+        "- Inline comments can only be attached to the resolvable right-side lines listed below.",
         "",
         "## SOP",
         "",
@@ -124,6 +125,7 @@ export function buildReviewPrompt(input) {
         "### 7. Inline Comment Gate",
         "",
         "Inline comments must target only added or changed lines in the latest commit diff.",
+        "Inline comments must use one of the exact path:line pairs from the Resolvable Inline Comment Lines section.",
         "",
         "For every inline comment:",
         "- Use the new-file path from the diff.",
@@ -377,11 +379,15 @@ export function buildReviewPrompt(input) {
         "",
         "inlineComments requirements:",
         "- Only include comments for lines added or changed in the latest commit diff.",
+        "- Only use path and line pairs listed under Resolvable Inline Comment Lines.",
         "- Include severity, confidence, and category for every inline comment.",
         "- Use confidence as a number from 1 to 10.",
         "- Keep body concise and actionable.",
         "- Markdown suggestions are allowed only when the exact replacement is obvious and small.",
         "- If no line-specific findings are needed, return an empty inlineComments array.",
+        "",
+        "Resolvable Inline Comment Lines:",
+        formatResolvableLines(input.resolvableLines),
         "",
         "Latest commit diff:",
         "```diff",
@@ -389,4 +395,29 @@ export function buildReviewPrompt(input) {
         "```",
         "",
     ].join("\n");
+}
+function formatResolvableLines(resolvableLines) {
+    if (!resolvableLines?.size) {
+        return "(none)";
+    }
+    return [...resolvableLines.entries()]
+        .filter(([, lines]) => lines.size > 0)
+        .map(([filePath, lines]) => `${filePath}: ${formatLineNumbers([...lines].sort((left, right) => left - right))}`)
+        .join("\n") || "(none)";
+}
+function formatLineNumbers(lines) {
+    const ranges = [];
+    let start = lines[0];
+    let end = lines[0];
+    for (const line of lines.slice(1)) {
+        if (line === end + 1) {
+            end = line;
+            continue;
+        }
+        ranges.push(start === end ? String(start) : `${start}-${end}`);
+        start = line;
+        end = line;
+    }
+    ranges.push(start === end ? String(start) : `${start}-${end}`);
+    return ranges.join(", ");
 }

@@ -62,3 +62,38 @@ export async function createPullRequestReview(github, pullRequest, input) {
         })),
     });
 }
+export function parseResolvableDiffLines(diff) {
+    const linesByPath = new Map();
+    let currentPath = "";
+    let newLineNumber = 0;
+    for (const line of diff.split("\n")) {
+        if (line.startsWith("+++ b/")) {
+            currentPath = line.slice("+++ b/".length);
+            if (!linesByPath.has(currentPath)) {
+                linesByPath.set(currentPath, new Set());
+            }
+            continue;
+        }
+        const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+        if (hunk) {
+            newLineNumber = Number(hunk[1]);
+            continue;
+        }
+        if (!currentPath || line.startsWith("diff --git ") || line.startsWith("--- ")) {
+            continue;
+        }
+        if (line.startsWith("+") && !line.startsWith("+++ ")) {
+            linesByPath.get(currentPath)?.add(newLineNumber);
+            newLineNumber += 1;
+            continue;
+        }
+        if (line.startsWith("-") && !line.startsWith("--- ")) {
+            continue;
+        }
+        newLineNumber += 1;
+    }
+    return linesByPath;
+}
+export function filterResolvableInlineComments(comments, resolvableLines) {
+    return comments.filter((comment) => resolvableLines.get(comment.path)?.has(comment.line));
+}

@@ -7,5 +7,6 @@ export type ReviewPromptInput = {
     baseSha: string;
     headSha: string;
     diff: string;
+    resolvableLines?: Map<string, Set<number>>;
 };
 export declare function buildReviewPrompt(input: ReviewPromptInput): string;

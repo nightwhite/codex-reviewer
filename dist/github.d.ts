@@ -18,6 +18,7 @@ export type PullRequestReviewInput = {
     comments: InlineReviewComment[];
 };
 export type GitHubClient = ReturnType<typeof getOctokit>;
+export type ResolvableDiffLines = Map<string, Set<number>>;
 export declare function loadPullRequestContext(eventPath: string): Promise<PullRequestContext>;
 export declare function getLatestCommitParentSha(github: GitHubClient, pullRequest: PullRequestContext): Promise<string>;
 export declare function getLatestCommitDiff(github: GitHubClient, pullRequest: PullRequestContext, range: {
@@ -25,3 +26,5 @@ export declare function getLatestCommitDiff(github: GitHubClient, pullRequest: P
     head: string;
 }): Promise<string>;
 export declare function createPullRequestReview(github: GitHubClient, pullRequest: PullRequestContext, input: PullRequestReviewInput): Promise<void>;
+export declare function parseResolvableDiffLines(diff: string): ResolvableDiffLines;
+export declare function filterResolvableInlineComments(comments: InlineReviewComment[], resolvableLines: ResolvableDiffLines): InlineReviewComment[];

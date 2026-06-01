@@ -23,6 +23,7 @@ export type PullRequestReviewInput = {
 };
 
 export type GitHubClient = ReturnType<typeof getOctokit>;
+export type ResolvableDiffLines = Map<string, Set<number>>;
 
 export async function loadPullRequestContext(eventPath: string): Promise<PullRequestContext> {
   const event = JSON.parse(await readFile(eventPath, "utf8")) as {
@@ -112,4 +113,51 @@ export async function createPullRequestReview(
       body: comment.body,
     })),
   });
+}
+
+export function parseResolvableDiffLines(diff: string): ResolvableDiffLines {
+  const linesByPath: ResolvableDiffLines = new Map();
+  let currentPath = "";
+  let newLineNumber = 0;
+
+  for (const line of diff.split("\n")) {
+    if (line.startsWith("+++ b/")) {
+      currentPath = line.slice("+++ b/".length);
+      if (!linesByPath.has(currentPath)) {
+        linesByPath.set(currentPath, new Set());
+      }
+      continue;
+    }
+
+    const hunk = line.match(/^@@ -\d+(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+    if (hunk) {
+      newLineNumber = Number(hunk[1]);
+      continue;
+    }
+
+    if (!currentPath || line.startsWith("diff --git ") || line.startsWith("--- ")) {
+      continue;
+    }
+
+    if (line.startsWith("+") && !line.startsWith("+++ ")) {
+      linesByPath.get(currentPath)?.add(newLineNumber);
+      newLineNumber += 1;
+      continue;
+    }
+
+    if (line.startsWith("-") && !line.startsWith("--- ")) {
+      continue;
+    }
+
+    newLineNumber += 1;
+  }
+
+  return linesByPath;
+}
+
+export function filterResolvableInlineComments(
+  comments: InlineReviewComment[],
+  resolvableLines: ResolvableDiffLines,
+): InlineReviewComment[] {
+  return comments.filter((comment) => resolvableLines.get(comment.path)?.has(comment.line));
 }
