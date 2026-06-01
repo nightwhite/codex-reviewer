@@ -15,7 +15,7 @@ test("buildReviewPrompt limits review scope to the latest commit", () => {
     body: "Changes thrust calculation.",
   });
 
-  assert.match(prompt, /only review the latest commit/i);
+  assert.match(prompt, /latest head commit/i);
   assert.match(prompt, /abc123/);
   assert.match(prompt, /def456\.\.\.abc123/);
   assert.match(prompt, /Do not review older commits/i);
@@ -36,30 +36,26 @@ test("buildReviewPrompt encodes senior reviewer criteria", () => {
 
   for (const phrase of [
     "/goal",
-    "scope check",
-    "production readiness",
-    "severity",
-    "confidence",
-    "correctness bugs",
-    "security vulnerabilities",
-    "performance regressions",
-    "missing tests",
-    "API design",
-    "encapsulation",
-    "modularity",
-    "SQL and data safety",
-    "race conditions and concurrency",
-    "LLM output trust boundaries",
-    "shell injection",
-    "enum and value completeness",
-    "documentation staleness",
-    "files that are too long",
-    "actionable",
-    "line-specific",
-    "Do not report speculative findings",
-    "read-only",
-    "Do not modify files",
-    "Do not run commands that mutate",
+    "Role and Goal",
+    "Follow this review process in order",
+    "Scope Lock",
+    "Intent Check",
+    "Full Diff Read",
+    "Risk-First Review",
+    "Production Readiness Review",
+    "Evidence Gate",
+    "Inline Comment Gate",
+    "Detailed Checklist",
+    "Blocking Correctness and Security",
+    "Data Safety, SQL, and Persistence",
+    "Concurrency and Idempotency",
+    "LLM and Third-Party Trust Boundaries",
+    "Shell, File, and Network Safety",
+    "API Design and Compatibility",
+    "Markdown and Emoji Style",
+    "🚨 critical",
+    "⚠️ important",
+    "✅ no meaningful findings",
   ]) {
     assert.match(prompt, new RegExp(phrase, "i"));
   }
@@ -86,4 +82,6 @@ test("buildReviewPrompt requests structured PR review JSON", () => {
   assert.match(prompt, /"severity"/);
   assert.match(prompt, /"confidence"/);
   assert.match(prompt, /"category"/);
+  assert.match(prompt, /Start with \*\*Verdict:\*\*/);
+  assert.match(prompt, /Do not output any text outside the JSON/);
 });
