@@ -1,4 +1,7 @@
 import http, { IncomingMessage, ServerResponse } from "node:http";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
+import type { ReadableStream } from "node:stream/web";
 
 export type ProxyRequestInput = {
   upstreamBaseUrl: string;
@@ -98,8 +101,16 @@ async function proxyResponsesRequest(
     response.writeHead(upstreamResponse.status, {
       "content-type": upstreamResponse.headers.get("content-type") ?? "application/json",
     });
-    response.end(Buffer.from(await upstreamResponse.arrayBuffer()));
+    if (upstreamResponse.body) {
+      await pipeline(Readable.fromWeb(upstreamResponse.body as ReadableStream), response);
+    } else {
+      response.end();
+    }
   } catch (error) {
+    if (response.headersSent || response.destroyed) {
+      response.destroy();
+      return;
+    }
     response.writeHead(502, { "content-type": "application/json" });
     response.end(
       JSON.stringify({

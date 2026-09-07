@@ -1,4 +1,6 @@
 import http from "node:http";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 export function createProxyRequestOptions(input) {
     if (input.path !== "/v1/responses") {
         throw new Error("Codex Reviewer proxy only forwards /v1/responses requests.");
@@ -63,9 +65,18 @@ async function proxyResponsesRequest(request, response, input) {
         response.writeHead(upstreamResponse.status, {
             "content-type": upstreamResponse.headers.get("content-type") ?? "application/json",
         });
-        response.end(Buffer.from(await upstreamResponse.arrayBuffer()));
+        if (upstreamResponse.body) {
+            await pipeline(Readable.fromWeb(upstreamResponse.body), response);
+        }
+        else {
+            response.end();
+        }
     }
     catch (error) {
+        if (response.headersSent || response.destroyed) {
+            response.destroy();
+            return;
+        }
         response.writeHead(502, { "content-type": "application/json" });
         response.end(JSON.stringify({
             error: error instanceof Error ? error.message : String(error),

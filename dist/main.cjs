@@ -2634,7 +2634,7 @@ var require_basename = __commonJS({
 var require_multipart = __commonJS({
   "node_modules/.pnpm/@fastify+busboy@2.1.1/node_modules/@fastify/busboy/lib/types/multipart.js"(exports2, module2) {
     "use strict";
-    var { Readable } = require("node:stream");
+    var { Readable: Readable2 } = require("node:stream");
     var { inherits } = require("node:util");
     var Dicer = require_Dicer();
     var parseParams = require_parseParams();
@@ -2899,11 +2899,11 @@ var require_multipart = __commonJS({
       part.resume();
     }
     function FileStream(opts) {
-      Readable.call(this, opts);
+      Readable2.call(this, opts);
       this.bytesRead = 0;
       this.truncated = false;
     }
-    inherits(FileStream, Readable);
+    inherits(FileStream, Readable2);
     FileStream.prototype._read = function(n) {
     };
     module2.exports = Multipart;
@@ -6865,7 +6865,7 @@ var require_client = __commonJS({
     var assert = require("assert");
     var net = require("net");
     var http2 = require("http");
-    var { pipeline } = require("stream");
+    var { pipeline: pipeline2 } = require("stream");
     var util = require_util();
     var timers = require_timers();
     var Request = require_request();
@@ -8283,7 +8283,7 @@ upgrade: ${upgrade}\r
         let onPipeData = function(chunk) {
           request.onBodySent(chunk);
         };
-        const pipe = pipeline(
+        const pipe = pipeline2(
           body,
           h2stream,
           (err) => {
@@ -9199,7 +9199,7 @@ var require_readable = __commonJS({
   "node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/api/readable.js"(exports2, module2) {
     "use strict";
     var assert = require("assert");
-    var { Readable } = require("stream");
+    var { Readable: Readable2 } = require("stream");
     var { RequestAbortedError, NotSupportedError, InvalidArgumentError } = require_errors();
     var util = require_util();
     var { ReadableStreamFrom, toUSVString } = require_util();
@@ -9211,7 +9211,7 @@ var require_readable = __commonJS({
     var kContentType = /* @__PURE__ */ Symbol("kContentType");
     var noop = () => {
     };
-    module2.exports = class BodyReadable extends Readable {
+    module2.exports = class BodyReadable extends Readable2 {
       constructor({
         resume,
         abort,
@@ -9542,7 +9542,7 @@ var require_abort_signal = __commonJS({
 var require_api_request = __commonJS({
   "node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/api/api-request.js"(exports2, module2) {
     "use strict";
-    var Readable = require_readable();
+    var Readable2 = require_readable();
     var {
       InvalidArgumentError,
       RequestAbortedError
@@ -9616,7 +9616,7 @@ var require_api_request = __commonJS({
         }
         const parsedHeaders = responseHeaders === "raw" ? util.parseHeaders(rawHeaders) : headers;
         const contentType = parsedHeaders["content-type"];
-        const body = new Readable({ resume, abort, contentType, highWaterMark });
+        const body = new Readable2({ resume, abort, contentType, highWaterMark });
         this.callback = null;
         this.res = body;
         if (callback !== null) {
@@ -9871,7 +9871,7 @@ var require_api_pipeline = __commonJS({
   "node_modules/.pnpm/undici@5.29.0/node_modules/undici/lib/api/api-pipeline.js"(exports2, module2) {
     "use strict";
     var {
-      Readable,
+      Readable: Readable2,
       Duplex,
       PassThrough
     } = require("stream");
@@ -9885,7 +9885,7 @@ var require_api_pipeline = __commonJS({
     var { addSignal, removeSignal } = require_abort_signal();
     var assert = require("assert");
     var kResume = /* @__PURE__ */ Symbol("resume");
-    var PipelineRequest = class extends Readable {
+    var PipelineRequest = class extends Readable2 {
       constructor() {
         super({ autoDestroy: true });
         this[kResume] = null;
@@ -9902,7 +9902,7 @@ var require_api_pipeline = __commonJS({
         callback(err);
       }
     };
-    var PipelineResponse = class extends Readable {
+    var PipelineResponse = class extends Readable2 {
       constructor(resume) {
         super({ autoDestroy: true });
         this[kResume] = resume;
@@ -10051,7 +10051,7 @@ var require_api_pipeline = __commonJS({
         util.destroy(ret, err);
       }
     };
-    function pipeline(opts, handler) {
+    function pipeline2(opts, handler) {
       try {
         const pipelineHandler = new PipelineHandler(opts, handler);
         this.dispatch({ ...opts, body: pipelineHandler.req }, pipelineHandler);
@@ -10060,7 +10060,7 @@ var require_api_pipeline = __commonJS({
         return new PassThrough().destroy(err);
       }
     }
-    module2.exports = pipeline;
+    module2.exports = pipeline2;
   }
 });
 
@@ -13005,7 +13005,7 @@ var require_fetch = __commonJS({
     } = require_constants2();
     var { kHeadersList } = require_symbols();
     var EE = require("events");
-    var { Readable, pipeline } = require("stream");
+    var { Readable: Readable2, pipeline: pipeline2 } = require("stream");
     var { addAbortListener, isErrored, isReadable, nodeMajor, nodeMinor } = require_util();
     var { dataURLProcessor, serializeAMimeType } = require_dataURL();
     var { TransformStream } = require("stream/web");
@@ -13896,7 +13896,7 @@ var require_fetch = __commonJS({
                   headers[kHeadersList].append(key, val);
                 }
               }
-              this.body = new Readable({ read: resume });
+              this.body = new Readable2({ read: resume });
               const decoders = [];
               const willFollow = request.redirect === "follow" && location && redirectStatusSet.has(status);
               if (request.method !== "HEAD" && request.method !== "CONNECT" && !nullBodyStatus.includes(status) && !willFollow) {
@@ -13924,7 +13924,7 @@ var require_fetch = __commonJS({
                 status,
                 statusText,
                 headersList: headers[kHeadersList],
-                body: decoders.length ? pipeline(this.body, ...decoders, () => {
+                body: decoders.length ? pipeline2(this.body, ...decoders, () => {
                 }) : this.body.on("error", () => {
                 })
               });
@@ -23882,7 +23882,7 @@ var core = __toESM(require_core(), 1);
 var import_github2 = __toESM(require_github(), 1);
 
 // src/reviewer.ts
-var import_promises3 = require("node:fs/promises");
+var import_promises4 = require("node:fs/promises");
 var import_node_os2 = require("node:os");
 var import_node_path2 = __toESM(require("node:path"), 1);
 
@@ -24394,6 +24394,8 @@ function escapeTomlString(value) {
 
 // src/providerProxy.ts
 var import_node_http = __toESM(require("node:http"), 1);
+var import_node_stream = require("node:stream");
+var import_promises2 = require("node:stream/promises");
 function createProxyRequestOptions(input) {
   if (input.path !== "/v1/responses") {
     throw new Error("Codex Reviewer proxy only forwards /v1/responses requests.");
@@ -24458,8 +24460,16 @@ async function proxyResponsesRequest(request, response, input) {
     response.writeHead(upstreamResponse.status, {
       "content-type": upstreamResponse.headers.get("content-type") ?? "application/json"
     });
-    response.end(Buffer.from(await upstreamResponse.arrayBuffer()));
+    if (upstreamResponse.body) {
+      await (0, import_promises2.pipeline)(import_node_stream.Readable.fromWeb(upstreamResponse.body), response);
+    } else {
+      response.end();
+    }
   } catch (error) {
+    if (response.headersSent || response.destroyed) {
+      response.destroy();
+      return;
+    }
     response.writeHead(502, { "content-type": "application/json" });
     response.end(
       JSON.stringify({
@@ -24477,9 +24487,9 @@ async function readRequestBody(request) {
 }
 
 // src/github.ts
-var import_promises2 = require("node:fs/promises");
+var import_promises3 = require("node:fs/promises");
 async function loadPullRequestContext(eventPath) {
-  const event = JSON.parse(await (0, import_promises2.readFile)(eventPath, "utf8"));
+  const event = JSON.parse(await (0, import_promises3.readFile)(eventPath, "utf8"));
   const pull = event.pull_request;
   const owner = pull?.base?.repo?.owner?.login ?? event.repository?.owner?.login;
   const repo = pull?.base?.repo?.name ?? event.repository?.name;
@@ -24583,7 +24593,7 @@ async function runReviewer(input) {
   const range = await getPullRequestDiff(input.github, input.pullRequest);
   const { diff } = range;
   const resolvableLines = parseResolvableDiffLines(diff);
-  const codexHome = await (0, import_promises3.mkdtemp)(import_node_path2.default.join((0, import_node_os2.tmpdir)(), "codex-reviewer-home-"));
+  const codexHome = await (0, import_promises4.mkdtemp)(import_node_path2.default.join((0, import_node_os2.tmpdir)(), "codex-reviewer-home-"));
   const proxy = await startProviderProxy({
     upstreamBaseUrl: input.providerBaseUrl,
     apiKey: input.providerApiKey
