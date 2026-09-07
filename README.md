@@ -1,14 +1,14 @@
 # Codex Reviewer
 
-Codex Reviewer is a GitHub Action that reviews only the latest commit in a pull request by running `codex exec`.
+Codex Reviewer is a GitHub Action that reviews the full pull request diff by running `codex exec`.
 
 It is built for Codex model providers, not direct ChatGPT-style API calls. The action starts a temporary local provider proxy, writes a temporary Codex `config.toml`, then runs `codex exec`.
 
 ## What It Reviews
 
-- `pull_request.opened`: reviews the current PR head commit only.
-- `pull_request.synchronize`: reviews the new PR head commit only.
-- Multi-commit PRs are not reviewed from base to head. The action compares `head.sha^...head.sha`.
+- Opened and synchronized pull requests are reviewed using GitHub's full PR diff endpoint.
+- Inline positions come from that same diff, excluding changes already in the base branch.
+- The PR head and base are checked before and after diff retrieval and again before publication. Changed ranges stop publication.
 - A GitHub PR Review is submitted with a summary and inline review comments when Codex finds line-specific issues.
 
 ## Direct Use In This Repository
@@ -21,7 +21,7 @@ Add these repository settings before enabling it:
 - Secret: `CODEX_PROVIDER_API_KEY`.
 - Optional variable: `CODEX_REVIEW_MODEL`, defaults to `gpt-5.5` in the bundled workflow.
 
-After that, every `pull_request.opened` and `pull_request.synchronize` run reviews only the latest PR commit.
+Every `pull_request.opened` and `pull_request.synchronize` run reviews all changes still present in the PR.
 
 ## Reusable Action Usage
 
@@ -88,7 +88,7 @@ Codex Reviewer tells Codex to run as a read-only reviewer in the prompt: inspect
 
 ## Review Criteria
 
-The Codex prompt instructs the reviewer to inspect only the latest commit for:
+The Codex prompt instructs the reviewer to inspect only the pull request for:
 
 - Correctness bugs and behavior regressions.
 - Security vulnerabilities and secret exposure.

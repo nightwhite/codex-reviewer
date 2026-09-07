@@ -23889,17 +23889,17 @@ var import_node_path2 = __toESM(require("node:path"), 1);
 // src/prompt.ts
 function buildReviewPrompt(input) {
   return [
-    "/goal Review only the latest pull request head commit and produce an actionable GitHub PR review JSON.",
+    "/goal Review the full pull request diff and produce an actionable GitHub PR review JSON.",
     "",
     "## Role and Goal",
     "",
     "You are a senior staff engineer reviewing a GitHub pull request.",
     "",
     "This review is triggered automatically after a pull request is opened or updated.",
-    "The pull request may contain multiple commits, but your review scope is strictly limited to the current latest head commit.",
+    "The pull request may contain multiple commits, but your review scope is strictly limited to the full pull request diff.",
     "",
     "Your job:",
-    "- Review only the latest commit diff.",
+    "- Review only the pull request diff.",
     "- Find high-value issues that matter before merge.",
     "- Avoid speculative, low-confidence, or style-only comments.",
     "- Return valid JSON that can be submitted as a GitHub Pull Request Review.",
@@ -23913,7 +23913,7 @@ function buildReviewPrompt(input) {
     "Pull request body:",
     input.body.trim() || "(empty)",
     "",
-    "Latest commit:",
+    "Pull request:",
     input.headSha,
     "",
     "Commit range:",
@@ -23921,9 +23921,11 @@ function buildReviewPrompt(input) {
     "",
     "Important:",
     "- The PR title and body are intent signals.",
-    "- The latest commit diff is the source of truth.",
-    "- Do not review older commits in this pull request.",
-    "- Do not comment on existing code unless the latest commit directly creates or exposes the issue.",
+    "- Follow current repository standards; historical plans do not by themselves prohibit an intentional configuration update.",
+    "- The local checkout is the trusted base branch, not the PR head. Use the supplied PR diff for changed code; do not claim base files are the head version.",
+    "- The pull request diff is the source of truth.",
+    "- Include changes from every commit still present in the PR diff.",
+    "- Do not comment on existing code unless the pull request directly creates or exposes the issue.",
     "- Inline comments can only be attached to the resolvable right-side lines listed below.",
     "",
     "## SOP",
@@ -23932,38 +23934,38 @@ function buildReviewPrompt(input) {
     "",
     "### 1. Scope Lock",
     "",
-    "Confirm that every finding is about the latest commit only.",
+    "Confirm that every finding is about the pull request only.",
     "",
     "Ignore:",
-    "- older commits in the same PR",
+    "- changes already present in the base branch",
     "- unrelated existing code",
     "- repository-wide style preferences",
-    "- issues not introduced or exposed by the latest commit",
+    "- issues not introduced or exposed by the pull request",
     "",
-    "If an issue exists in old code and the latest commit does not make it worse, do not create an inline comment.",
+    "If an issue exists in old code and the pull request does not make it worse, do not create an inline comment.",
     "",
     "### 2. Intent Check",
     "",
     "Infer the intended change from the PR title and body.",
     "",
-    "Compare that intent with the latest commit diff.",
+    "Compare that intent with the pull request diff.",
     "",
     "In summaryMarkdown, report one scope status:",
     "",
-    "- \u{1F3AF} **CLEAN** \u2014 the latest commit matches the PR intent.",
-    "- \u{1F3AF} **DRIFT DETECTED** \u2014 the latest commit includes unrelated or surprising changes.",
-    "- \u{1F3AF} **REQUIREMENTS MISSING** \u2014 the latest commit appears incomplete for the stated intent.",
+    "- \u{1F3AF} **CLEAN** \u2014 the pull request matches the PR intent.",
+    "- \u{1F3AF} **DRIFT DETECTED** \u2014 the pull request includes unrelated or surprising changes.",
+    "- \u{1F3AF} **REQUIREMENTS MISSING** \u2014 the pull request appears incomplete for the stated intent.",
     "",
     "Treat scope drift as informational unless it creates a concrete correctness, safety, or maintainability risk.",
     "",
     "### 3. Full Diff Read",
     "",
-    "Read the entire latest commit diff before producing findings.",
+    "Read the entire pull request diff before producing findings.",
     "",
     "Before commenting:",
     "- Check nearby diff context.",
     "- Check whether the diff already handles the concern.",
-    "- Check whether the issue is truly introduced by this latest commit.",
+    "- Check whether the issue is truly introduced by this pull request.",
     "",
     "Do not comment after seeing only one suspicious line.",
     "",
@@ -23986,7 +23988,7 @@ function buildReviewPrompt(input) {
     "",
     "### 5. Production Readiness Review",
     "",
-    "Check whether the latest commit introduces risks around:",
+    "Check whether the pull request introduces risks around:",
     "- tests",
     "- migrations",
     "- rollback safety",
@@ -24013,7 +24015,7 @@ function buildReviewPrompt(input) {
     "",
     "### 7. Inline Comment Gate",
     "",
-    "Inline comments must target only added or changed lines in the latest commit diff.",
+    "Inline comments must target only added or changed lines in the pull request diff.",
     "Inline comments must use one of the exact path:line pairs from the Resolvable Inline Comment Lines section.",
     "",
     "For every inline comment:",
@@ -24119,7 +24121,7 @@ function buildReviewPrompt(input) {
     "- idempotency",
     "- regression scenarios",
     "",
-    "Do not require tests for trivial refactors unless the latest commit changes behavior or risk.",
+    "Do not require tests for trivial refactors unless the pull request changes behavior or risk.",
     "",
     "### G. Performance",
     "",
@@ -24161,7 +24163,7 @@ function buildReviewPrompt(input) {
     "- files becoming hard to review, navigate, or test",
     "- code that should be split only when splitting directly improves maintainability",
     "",
-    "Do not ask for broad rewrites unless the latest commit creates a clear maintainability risk.",
+    "Do not ask for broad rewrites unless the pull request creates a clear maintainability risk.",
     "",
     "### J. Production Readiness",
     "",
@@ -24180,9 +24182,9 @@ function buildReviewPrompt(input) {
     "### K. Scope and Documentation",
     "",
     "Check whether:",
-    "- the latest commit matches the PR title and body",
-    "- the latest commit includes unrelated changes",
-    "- the latest commit omits something the PR body clearly promises",
+    "- the pull request matches the PR title and body",
+    "- the pull request includes unrelated changes",
+    "- the pull request omits something the PR body clearly promises",
     "- documentation should be updated",
     "- new TODOs were introduced without clear ownership",
     "- user-visible behavior changed without explanation",
@@ -24267,7 +24269,7 @@ function buildReviewPrompt(input) {
     "- Keep it concise.",
     "",
     "inlineComments requirements:",
-    "- Only include comments for lines added or changed in the latest commit diff.",
+    "- Only include comments for lines added or changed in the pull request diff.",
     "- Only use path and line pairs listed under Resolvable Inline Comment Lines.",
     "- Include severity, confidence, and category for every inline comment.",
     "- Use confidence as a number from 1 to 10.",
@@ -24278,7 +24280,7 @@ function buildReviewPrompt(input) {
     "Resolvable Inline Comment Lines:",
     formatResolvableLines(input.resolvableLines),
     "",
-    "Latest commit diff:",
+    "Pull request diff:",
     "```diff",
     input.diff,
     "```",
@@ -24495,33 +24497,26 @@ async function loadPullRequestContext(eventPath) {
     headSha
   };
 }
-async function getLatestCommitParentSha(github, pullRequest) {
-  const response = await github.rest.pulls.listCommits({
+async function getPullRequestDiff(github, pullRequest) {
+  const params = {
     owner: pullRequest.owner,
     repo: pullRequest.repo,
-    pull_number: pullRequest.pullNumber,
-    per_page: 100
-  });
-  const latestCommit = response.data.at(-1);
-  if (!latestCommit || latestCommit.sha !== pullRequest.headSha) {
-    throw new Error("Could not resolve the latest pull request commit.");
-  }
-  const parent = latestCommit.parents[0]?.sha;
-  if (!parent) {
-    throw new Error("Latest commit has no parent sha; cannot review only the latest commit.");
-  }
-  return parent;
-}
-async function getLatestCommitDiff(github, pullRequest, range) {
-  const response = await github.rest.repos.compareCommitsWithBasehead({
-    owner: pullRequest.owner,
-    repo: pullRequest.repo,
-    basehead: `${range.base}...${range.head}`,
+    pull_number: pullRequest.pullNumber
+  };
+  const before = (await github.rest.pulls.get(params)).data;
+  if (before.head.sha !== pullRequest.headSha) throw new Error("PR head changed; review cancelled.");
+  const response = await github.rest.pulls.get({
+    ...params,
     headers: {
       accept: "application/vnd.github.v3.diff"
     }
   });
-  return String(response.data);
+  const after = (await github.rest.pulls.get(params)).data;
+  if (after.head.sha !== before.head.sha || after.base.sha !== before.base.sha) {
+    throw new Error("PR range changed; review cancelled.");
+  }
+  if (typeof response.data !== "string") throw new Error("Expected a PR diff.");
+  return { diff: response.data, base: before.base.sha, head: before.head.sha };
 }
 async function createPullRequestReview(github, pullRequest, input) {
   await github.rest.pulls.createReview({
@@ -24544,6 +24539,11 @@ function parseResolvableDiffLines(diff) {
   let currentPath = "";
   let newLineNumber = 0;
   for (const line of diff.split("\n")) {
+    if (line.startsWith("diff --git ")) {
+      currentPath = "";
+      continue;
+    }
+    if (line.startsWith("\\ No newline")) continue;
     if (line.startsWith("+++ b/")) {
       currentPath = line.slice("+++ b/".length);
       if (!linesByPath.has(currentPath)) {
@@ -24579,22 +24579,9 @@ function filterResolvableInlineComments(comments, resolvableLines) {
 var projectName = "codex-reviewer";
 var projectUrl = "https://github.com/nightwhite/codex-reviewer";
 var projectLink = `[${projectName}](${projectUrl})`;
-function latestCommitRange(input) {
-  if (!input.headSha.trim()) {
-    throw new Error("head sha is required");
-  }
-  if (!input.parentSha.trim()) {
-    throw new Error("parent sha is required");
-  }
-  return { base: input.parentSha, head: input.headSha };
-}
 async function runReviewer(input) {
-  const parentSha = await getLatestCommitParentSha(input.github, input.pullRequest);
-  const range = latestCommitRange({
-    headSha: input.pullRequest.headSha,
-    parentSha
-  });
-  const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
+  const range = await getPullRequestDiff(input.github, input.pullRequest);
+  const { diff } = range;
   const resolvableLines = parseResolvableDiffLines(diff);
   const codexHome = await (0, import_promises3.mkdtemp)(import_node_path2.default.join((0, import_node_os2.tmpdir)(), "codex-reviewer-home-"));
   const proxy = await startProviderProxy({
@@ -24627,6 +24614,10 @@ async function runReviewer(input) {
       effort: input.effort
     });
     const review = parseCodexReview(rawReview);
+    const current = await getPullRequestDiff(input.github, input.pullRequest);
+    if (current.base !== range.base || current.diff !== diff) {
+      throw new Error("PR diff changed during review; publication cancelled.");
+    }
     await createPullRequestReview(input.github, input.pullRequest, {
       body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
       commitSha: range.head,
@@ -24687,7 +24678,7 @@ function formatReviewBody(marker, range, review) {
     "",
     `### ${projectLink}: Code review`,
     "",
-    `Reviewed latest commit: \`${range.head}\``,
+    `Reviewed full pull request at: \`${range.head}\``,
     `Range: \`${range.base}...${range.head}\``,
     "",
     review.trim(),

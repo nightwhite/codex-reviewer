@@ -1,8 +1,4 @@
 import { GitHubClient, InlineReviewComment, PullRequestContext } from "./github.js";
-export type LatestCommitRangeInput = {
-    headSha: string;
-    parentSha: string;
-};
 export type CommitRange = {
     base: string;
     head: string;
@@ -21,7 +17,6 @@ export type CodexReview = {
     summaryMarkdown: string;
     inlineComments: InlineReviewComment[];
 };
-export declare function latestCommitRange(input: LatestCommitRangeInput): CommitRange;
 export declare function runReviewer(input: ReviewerInput): Promise<string>;
 export declare function parseCodexReview(rawReview: string): CodexReview;
 export declare function formatReviewBody(marker: string, range: CommitRange, review: string): string;
