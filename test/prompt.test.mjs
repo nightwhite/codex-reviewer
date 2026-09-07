@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { buildReviewPrompt } from "../dist/prompt.js";
 
-test("buildReviewPrompt limits review scope to the latest commit", () => {
+test("buildReviewPrompt limits review scope to the pull request", () => {
   const prompt = buildReviewPrompt({
     owner: "acme",
     repo: "rocket",
@@ -15,10 +15,10 @@ test("buildReviewPrompt limits review scope to the latest commit", () => {
     body: "Changes thrust calculation.",
   });
 
-  assert.match(prompt, /latest head commit/i);
+  assert.match(prompt, /full pull request diff/i);
   assert.match(prompt, /abc123/);
   assert.match(prompt, /def456\.\.\.abc123/);
-  assert.match(prompt, /Do not review older commits/i);
+  assert.match(prompt, /Include changes from every commit/i);
   assert.match(prompt, /diff --git/);
 });
 

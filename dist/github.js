@@ -18,33 +18,28 @@ export async function loadPullRequestContext(eventPath) {
         headSha,
     };
 }
-export async function getLatestCommitParentSha(github, pullRequest) {
-    const response = await github.rest.pulls.listCommits({
+export async function getPullRequestDiff(github, pullRequest) {
+    const params = {
         owner: pullRequest.owner,
         repo: pullRequest.repo,
         pull_number: pullRequest.pullNumber,
-        per_page: 100,
-    });
-    const latestCommit = response.data.at(-1);
-    if (!latestCommit || latestCommit.sha !== pullRequest.headSha) {
-        throw new Error("Could not resolve the latest pull request commit.");
-    }
-    const parent = latestCommit.parents[0]?.sha;
-    if (!parent) {
-        throw new Error("Latest commit has no parent sha; cannot review only the latest commit.");
-    }
-    return parent;
-}
-export async function getLatestCommitDiff(github, pullRequest, range) {
-    const response = await github.rest.repos.compareCommitsWithBasehead({
-        owner: pullRequest.owner,
-        repo: pullRequest.repo,
-        basehead: `${range.base}...${range.head}`,
+    };
+    const before = (await github.rest.pulls.get(params)).data;
+    if (before.head.sha !== pullRequest.headSha)
+        throw new Error("PR head changed; review cancelled.");
+    const response = await github.rest.pulls.get({
+        ...params,
         headers: {
             accept: "application/vnd.github.v3.diff",
         },
     });
-    return String(response.data);
+    const after = (await github.rest.pulls.get(params)).data;
+    if (after.head.sha !== before.head.sha || after.base.sha !== before.base.sha) {
+        throw new Error("PR range changed; review cancelled.");
+    }
+    if (typeof response.data !== 'string')
+        throw new Error('Expected a PR diff.');
+    return { diff: response.data, base: before.base.sha, head: before.head.sha };
 }
 export async function createPullRequestReview(github, pullRequest, input) {
     await github.rest.pulls.createReview({
@@ -67,6 +62,12 @@ export function parseResolvableDiffLines(diff) {
     let currentPath = "";
     let newLineNumber = 0;
     for (const line of diff.split("\n")) {
+        if (line.startsWith('diff --git ')) {
+            currentPath = '';
+            continue;
+        }
+        if (line.startsWith('\\ No newline'))
+            continue;
         if (line.startsWith("+++ b/")) {
             currentPath = line.slice("+++ b/".length);
             if (!linesByPath.has(currentPath)) {

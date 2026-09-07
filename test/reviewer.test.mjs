@@ -4,30 +4,8 @@ import test from "node:test";
 import {
   formatInlineCommentBody,
   formatReviewBody,
-  latestCommitRange,
   parseCodexReview,
 } from "../dist/reviewer.js";
-
-test("latestCommitRange reviews only the pull request head commit", () => {
-  assert.deepEqual(
-    latestCommitRange({ headSha: "abc123", parentSha: "def456" }),
-    { base: "def456", head: "abc123" },
-  );
-});
-
-test("latestCommitRange rejects missing parent sha", () => {
-  assert.throws(
-    () => latestCommitRange({ headSha: "abc123", parentSha: "" }),
-    /parent sha/i,
-  );
-});
-
-test("latestCommitRange rejects missing head sha", () => {
-  assert.throws(
-    () => latestCommitRange({ headSha: "", parentSha: "def456" }),
-    /head sha/i,
-  );
-});
 
 test("parseCodexReview extracts summary and inline comments from JSON", () => {
   assert.deepEqual(
@@ -63,7 +41,7 @@ test("formatReviewBody makes the PR review clearly branded", () => {
 
   assert.match(body, /^<!-- codex-reviewer:latest-commit -->/);
   assert.match(body, /### \[codex-reviewer\]\(https:\/\/github\.com\/nightwhite\/codex-reviewer\): Code review/);
-  assert.match(body, /Reviewed latest commit: `head456`/);
+  assert.match(body, /Reviewed full pull request at: `head456`/);
   assert.match(body, /Range: `base123\.\.\.head456`/);
   assert.match(body, /\*\*Verdict:\*\* Request changes\./);
 });

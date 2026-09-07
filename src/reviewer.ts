@@ -10,15 +10,9 @@ import {
   PullRequestContext,
   createPullRequestReview,
   filterResolvableInlineComments,
-  getLatestCommitParentSha,
-  getLatestCommitDiff,
+  getPullRequestDiff,
   parseResolvableDiffLines,
 } from "./github.js";
-
-export type LatestCommitRangeInput = {
-  headSha: string;
-  parentSha: string;
-};
 
 export type CommitRange = {
   base: string;
@@ -45,23 +39,9 @@ const projectName = "codex-reviewer";
 const projectUrl = "https://github.com/nightwhite/codex-reviewer";
 const projectLink = `[${projectName}](${projectUrl})`;
 
-export function latestCommitRange(input: LatestCommitRangeInput): CommitRange {
-  if (!input.headSha.trim()) {
-    throw new Error("head sha is required");
-  }
-  if (!input.parentSha.trim()) {
-    throw new Error("parent sha is required");
-  }
-  return { base: input.parentSha, head: input.headSha };
-}
-
 export async function runReviewer(input: ReviewerInput): Promise<string> {
-  const parentSha = await getLatestCommitParentSha(input.github, input.pullRequest);
-  const range = latestCommitRange({
-    headSha: input.pullRequest.headSha,
-    parentSha,
-  });
-  const diff = await getLatestCommitDiff(input.github, input.pullRequest, range);
+  const range = await getPullRequestDiff(input.github, input.pullRequest);
+  const { diff } = range;
   const resolvableLines = parseResolvableDiffLines(diff);
   const codexHome = await mkdtemp(path.join(tmpdir(), "codex-reviewer-home-"));
   const proxy = await startProviderProxy({
@@ -96,6 +76,10 @@ export async function runReviewer(input: ReviewerInput): Promise<string> {
       effort: input.effort,
     });
     const review = parseCodexReview(rawReview);
+    const current = await getPullRequestDiff(input.github, input.pullRequest);
+    if (current.base !== range.base || current.diff !== diff) {
+      throw new Error('PR diff changed during review; publication cancelled.');
+    }
 
     await createPullRequestReview(input.github, input.pullRequest, {
       body: formatReviewBody(input.commentMarker, range, review.summaryMarkdown),
@@ -168,7 +152,7 @@ export function formatReviewBody(marker: string, range: CommitRange, review: str
     "",
     `### ${projectLink}: Code review`,
     "",
-    `Reviewed latest commit: \`${range.head}\``,
+    `Reviewed full pull request at: \`${range.head}\``,
     `Range: \`${range.base}...${range.head}\``,
     "",
     review.trim(),

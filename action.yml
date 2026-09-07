@@ -1,5 +1,5 @@
 name: "Codex Reviewer"
-description: "Review only the latest commit in a pull request with Codex."
+description: "Review only the pull request in a pull request with Codex."
 author: "codex-reviewer"
 inputs:
   github-token:

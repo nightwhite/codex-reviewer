@@ -5,11 +5,31 @@ import path from "node:path";
 import test from "node:test";
 
 import {
+  getPullRequestDiff,
   createPullRequestReview,
   filterResolvableInlineComments,
   loadPullRequestContext,
   parseResolvableDiffLines,
 } from "../dist/github.js";
+
+test("PR diff uses the PR endpoint and rejects a moving head", async () => {
+  const calls = [];
+  let head = 'head123';
+  const github = { rest: { pulls: { get: async (input) => {
+    calls.push(input);
+    return { data: input.headers ? 'full PR diff' : {head: {sha: head}, base: {sha: 'base123'}} };
+  } } } };
+  const pull = {owner: 'acme', repo: 'rocket', pullNumber: 42, headSha: 'head123'};
+  assert.deepEqual(await getPullRequestDiff(github, pull), {diff: 'full PR diff', base: 'base123', head: 'head123'});
+  assert.equal(calls[1].pull_number, 42);
+  head = 'new-head';
+  await assert.rejects(getPullRequestDiff(github, pull), /changed/);
+});
+
+test("no-newline markers do not shift later added comment positions", () => {
+  const diff = 'diff --git a/a b/a\n--- a/a\n+++ b/a\n@@ -1 +1,2 @@\n-old\n\\ No newline at end of file\n+new\n+second\n';
+  assert.deepEqual(parseResolvableDiffLines(diff).get('a'), new Set([1, 2]));
+});
 
 test("loadPullRequestContext reads the base repository and PR head sha", async () => {
   const dir = await mkdtemp(path.join(tmpdir(), "codex-reviewer-event-"));
